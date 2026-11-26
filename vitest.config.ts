@@ -17,6 +17,7 @@ export default defineConfig({
         test: {
           name: 'integration',
           include: ['test/integration/**/*.int-spec.ts'],
+          globalSetup: ['test/integration/support/global-setup.ts'],
           fileParallelism: false,
         },
       },
@@ -25,6 +26,7 @@ export default defineConfig({
         test: {
           name: 'e2e',
           include: ['test/e2e/**/*.e2e-spec.ts'],
+          globalSetup: ['test/integration/support/global-setup.ts'],
           fileParallelism: false,
         },
       },

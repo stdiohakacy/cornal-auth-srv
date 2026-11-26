@@ -84,6 +84,19 @@ describe('parseConfig', () => {
     });
   });
 
+  it('OUTBOX_RELAY_ENABLED "false" becomes false', () => {
+    expect(
+      parseConfig({ ...minimalEnv, OUTBOX_RELAY_ENABLED: 'false' }),
+    ).toMatchObject({ ok: true, value: { OUTBOX_RELAY_ENABLED: false } });
+  });
+
+  it('DB_POOL_MAX defaults to 5', () => {
+    expect(parseConfig(minimalEnv)).toMatchObject({
+      ok: true,
+      value: { DB_POOL_MAX: 5, OUTBOX_RELAY_ENABLED: true },
+    });
+  });
+
   it('.env.example satisfies the schema', () => {
     const example = parseEnv(
       readFileSync(new URL('../../.env.example', import.meta.url), 'utf8'),

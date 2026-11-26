@@ -3,6 +3,7 @@ import { AppConfigModule } from './config/app-config.module.js';
 import type { AppConfig } from './config/env.schema.js';
 import { HealthModule } from './health/health.module.js';
 import { LoggingModule } from './shared/infrastructure/logging/logging.module.js';
+import { PersistenceModule } from './shared/infrastructure/persistence/persistence.module.js';
 import { RequestContextModule } from './shared/infrastructure/request-context/request-context.module.js';
 
 /**
@@ -19,6 +20,7 @@ export class AppModule {
         RequestContextModule,
         LoggingModule,
         HealthModule,
+        PersistenceModule,
       ],
     };
   }

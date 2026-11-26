@@ -68,7 +68,9 @@ P11 Ops / NFR runs alongside from P4 onward; full load tests after P7.
 
 ---
 
-## Phase 0 — Foundation & tooling
+## Phase 0 — Foundation & tooling ✅
+
+> Done — detailed plan: `2026-11-26-phase-0-foundation.md`.
 
 Ref: PB§6, SD§3.1
 
@@ -95,7 +97,9 @@ Ref: PB§6, SD§3.1
 - `docker compose up` brings up all 4 services as healthy.
 - The app starts with `APP_ROLE=api` and fails fast on an invalid env.
 
-## Phase 1 — Shared kernel
+## Phase 1 — Shared kernel ✅
+
+> Done — detailed plan: `2026-11-26-phase-1-shared-kernel.md`.
 
 Ref: PB§2, PB§3.3, PB§4.2
 
@@ -114,7 +118,9 @@ Ref: PB§2, PB§3.3, PB§4.2
 - The unit tests for the kernel pass.
 - An e2e test of a dummy route that returns an unmapped error shows a `problem+json` body containing `requestId`, and does **not** contain the message.
 
-## Phase 2 — Persistence, Unit of Work & Outbox
+## Phase 2 — Persistence, Unit of Work & Outbox ✅
+
+> Done — detailed plan: `2026-11-26-phase-2-persistence.md`.
 
 Ref: PB§3, SD§2
 
