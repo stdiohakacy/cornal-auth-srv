@@ -1,4 +1,11 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  Res,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import type { Response } from 'express';
 import {
   HealthCheck,
   HealthCheckService,
@@ -29,10 +36,16 @@ export class HealthController {
     return { status: 'ok', role: this.config.APP_ROLE };
   }
 
-  /** Readiness: every registered dependency answers in time. 503 takes the pod out of rotation. */
+  /**
+   * Readiness: every registered dependency answers in time. 503 takes the pod out of rotation.
+   * The terminus body is returned as-is (not problem+json) because orchestrators and dashboards
+   * read `info` / `error` per dependency.
+   */
   @Get('ready')
   @HealthCheck()
-  ready(): Promise<HealthCheckResult> {
+  async ready(
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<HealthCheckResult | string | object> {
     const checks = [...this.readiness.entries()].map(
       ([name, probe]) =>
         () =>
@@ -45,6 +58,12 @@ export class HealthController {
             })
             .withTimeout(PROBE_TIMEOUT_MS),
     );
-    return this.health.check(checks);
+    try {
+      return await this.health.check(checks);
+    } catch (error) {
+      if (!(error instanceof ServiceUnavailableException)) throw error;
+      res.status(error.getStatus());
+      return error.getResponse();
+    }
   }
 }

@@ -1,36 +1,13 @@
-import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import type { App } from 'supertest/types.js';
-import { AppModule } from '../../src/app.module.js';
-import type { AppConfig } from '../../src/config/env.schema.js';
 import { ReadinessRegistry } from '../../src/health/readiness.registry.js';
-
-const config: AppConfig = Object.freeze({
-  NODE_ENV: 'test',
-  APP_ROLE: 'login',
-  PORT: 0,
-  LOG_LEVEL: 'info',
-  DATABASE_URL: 'postgres://u:p@localhost:6432/db',
-  DATABASE_DIRECT_URL: 'postgres://u:p@localhost:5432/db',
-  REDIS_URL: 'redis://localhost:6379',
-  NATS_URL: 'nats://localhost:4222',
-});
-
-async function createApp(): Promise<INestApplication<App>> {
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule.forRole(config)],
-  }).compile();
-  const app = moduleRef.createNestApplication<INestApplication<App>>();
-  await app.init();
-  return app;
-}
+import { createTestApp } from './support/create-app.js';
 
 describe('GET /health (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
 
   beforeEach(async () => {
-    app = await createApp();
+    app = await createTestApp();
   });
 
   afterEach(async () => {

@@ -56,6 +56,34 @@ describe('parseConfig', () => {
     expect(result.ok && Object.isFrozen(result.value)).toBe(true);
   });
 
+  it('TRUST_PROXY defaults to "loopback"', () => {
+    expect(parseConfig(minimalEnv)).toMatchObject({
+      ok: true,
+      value: { TRUST_PROXY: 'loopback' },
+    });
+  });
+
+  it('TRUST_PROXY "false" becomes false', () => {
+    expect(parseConfig({ ...minimalEnv, TRUST_PROXY: 'false' })).toMatchObject({
+      ok: true,
+      value: { TRUST_PROXY: false },
+    });
+  });
+
+  it('TRUST_PROXY "2" becomes 2', () => {
+    expect(parseConfig({ ...minimalEnv, TRUST_PROXY: '2' })).toMatchObject({
+      ok: true,
+      value: { TRUST_PROXY: 2 },
+    });
+  });
+
+  it('LOG_LEVEL accepts silent', () => {
+    expect(parseConfig({ ...minimalEnv, LOG_LEVEL: 'silent' })).toMatchObject({
+      ok: true,
+      value: { LOG_LEVEL: 'silent' },
+    });
+  });
+
   it('.env.example satisfies the schema', () => {
     const example = parseEnv(
       readFileSync(new URL('../../.env.example', import.meta.url), 'utf8'),
