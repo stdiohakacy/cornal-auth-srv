@@ -62,6 +62,9 @@ export class AppExceptionFilter implements ExceptionFilter {
 
     const requestId =
       this.ctx.current()?.requestId ?? res.getHeader('x-request-id');
+    const retryAfter = problem.details?.['retryAfterSeconds'];
+    if (typeof retryAfter === 'number')
+      res.setHeader('Retry-After', String(retryAfter));
     res
       .status(problem.status)
       .type('application/problem+json')
@@ -90,7 +93,9 @@ export class AppExceptionFilter implements ExceptionFilter {
     if (exception instanceof DomainError) {
       if (!isErrorCode(exception.code)) return INTERNAL;
       const status = ERROR_STATUS[exception.code];
-      if (status >= 500) return INTERNAL;
+      // 503 is an honest capacity signal (with Retry-After); other 5xx never leak details.
+      if (status >= 500 && status !== HttpStatus.SERVICE_UNAVAILABLE)
+        return INTERNAL;
       return {
         status,
         code: exception.code,

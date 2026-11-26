@@ -18,4 +18,15 @@ export const CommonErrorCode = {
 export type CommonErrorCode =
   (typeof CommonErrorCode)[keyof typeof CommonErrorCode];
 
-export type ErrorCode = CommonErrorCode;
+export const IdentityErrorCode = {
+  InvalidEmail: 'IDENTITY.INVALID_EMAIL',
+  WeakPassword: 'IDENTITY.WEAK_PASSWORD',
+  EmailTaken: 'IDENTITY.EMAIL_TAKEN',
+  InvalidCredentials: 'IDENTITY.INVALID_CREDENTIALS',
+  AccountLocked: 'IDENTITY.ACCOUNT_LOCKED',
+  InvalidToken: 'IDENTITY.INVALID_TOKEN',
+} as const;
+export type IdentityErrorCode =
+  (typeof IdentityErrorCode)[keyof typeof IdentityErrorCode];
+
+export type ErrorCode = CommonErrorCode | IdentityErrorCode;

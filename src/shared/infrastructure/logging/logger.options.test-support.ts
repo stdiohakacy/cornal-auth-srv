@@ -13,5 +13,8 @@ export function testConfigFor(level: AppConfig['LOG_LEVEL']): AppConfig {
     OUTBOX_RELAY_ENABLED: true,
     REDIS_URL: 'redis://localhost:6379',
     NATS_URL: 'nats://localhost:4222',
+    EMAIL_VERIFICATION_URL: 'http://localhost:3000/verify-email',
+    APP_LOGIN_URL: 'http://localhost:3000/login',
+    EMAIL_TRANSPORT: 'log',
   });
 }

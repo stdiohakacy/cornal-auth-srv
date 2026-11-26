@@ -151,7 +151,9 @@ Ref: PB§3, SD§2
 - Nested `run` → a single transaction.
 - Two concurrent updates on the same version → one `ConcurrencyConflict`.
 
-## Phase 3 — Identity: register, verify email, password login, reset
+## Phase 3 — Identity: register, verify email, password login, reset (3a ✅, 3b pending)
+
+> 3a done — detailed plan: `2026-11-26-phase-3a-identity.md`. 3b: password reset/change, HIBP, real email provider.
 
 Ref: SD§3.3, SD§3.5, PB§2.4–2.5
 

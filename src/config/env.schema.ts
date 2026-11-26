@@ -12,32 +12,57 @@ const trustProxy = z
     return raw;
   });
 
-export const EnvSchema = z.object({
-  NODE_ENV: z
-    .enum(['development', 'test', 'production'])
-    .default('development'),
-  APP_ROLE: z.enum(['login', 'api', 'worker']).default('api'),
-  PORT: z.coerce.number().int().min(1).max(65_535).default(3001),
-  LOG_LEVEL: z
-    .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
-    .default('info'),
-  /** Which upstream proxies may set X-Forwarded-For. Never `true` behind an untrusted edge. */
-  TRUST_PROXY: trustProxy,
-  /** Through PgBouncer (transaction pooling). Used by the app at runtime. */
-  DATABASE_URL: z.url(),
-  /** Straight to PostgreSQL. Migrations and session-level features only. */
-  DATABASE_DIRECT_URL: z.url(),
-  DATABASE_REPLICA_URL: z.url().optional(),
-  /** Per-pod pool size. Keep small: PgBouncer multiplexes onto ~40 server connections. */
-  DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
-  /** Disable only in tests or in a consumer-only deployment. */
-  OUTBOX_RELAY_ENABLED: z
-    .enum(['true', 'false'])
-    .default('true')
-    .transform((value) => value === 'true'),
-  REDIS_URL: z.url(),
-  NATS_URL: z.url(),
-});
+export const EnvSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
+    APP_ROLE: z.enum(['login', 'api', 'worker']).default('api'),
+    PORT: z.coerce.number().int().min(1).max(65_535).default(3001),
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+      .default('info'),
+    /** Which upstream proxies may set X-Forwarded-For. Never `true` behind an untrusted edge. */
+    TRUST_PROXY: trustProxy,
+    /** Through PgBouncer (transaction pooling). Used by the app at runtime. */
+    DATABASE_URL: z.url(),
+    /** Straight to PostgreSQL. Migrations and session-level features only. */
+    DATABASE_DIRECT_URL: z.url(),
+    DATABASE_REPLICA_URL: z.url().optional(),
+    /** Per-pod pool size. Keep small: PgBouncer multiplexes onto ~40 server connections. */
+    DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
+    /** Disable only in tests or in a consumer-only deployment. */
+    OUTBOX_RELAY_ENABLED: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
+    REDIS_URL: z.url(),
+    NATS_URL: z.url(),
+    /** Base URL of the frontend page that receives `?token=` from the verification email. */
+    EMAIL_VERIFICATION_URL: z
+      .url()
+      .default('http://localhost:3000/verify-email'),
+    /** Frontend login page, linked from the "account already exists" email. */
+    APP_LOGIN_URL: z.url().default('http://localhost:3000/login'),
+    /** `log` prints emails (with their secret links) to the log: development only. */
+    EMAIL_TRANSPORT: z.enum(['log']).default('log'),
+    /** Concurrent Argon2 jobs per pod; defaults to the number of CPUs. */
+    HASH_MAX_CONCURRENCY: z.coerce.number().int().min(1).max(256).optional(),
+    /** Read by libuv at process start (Argon2 runs on its threadpool). Declared here so the gate can match it. */
+    UV_THREADPOOL_SIZE: z.coerce.number().int().min(1).max(1024).optional(),
+    /** Optional server-side secret mixed into Argon2 (from a secret manager in production). */
+    PASSWORD_PEPPER: z.string().min(32).optional(),
+  })
+  .superRefine((env, ctx) => {
+    if (env.NODE_ENV === 'production' && env.EMAIL_TRANSPORT === 'log') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['EMAIL_TRANSPORT'],
+        message:
+          'The log transport writes secret links to logs; configure a real provider in production',
+      });
+    }
+  });
 
 export type AppConfig = Readonly<z.infer<typeof EnvSchema>>;
 export type AppRole = AppConfig['APP_ROLE'];

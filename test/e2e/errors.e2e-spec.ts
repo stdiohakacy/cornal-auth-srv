@@ -4,6 +4,7 @@ import request from 'supertest';
 import { z } from 'zod';
 import { CommonErrorCode } from '../../src/contracts/error-codes.js';
 import { DomainError } from '../../src/shared/domain/domain-error.js';
+import { ServiceBusyError } from '../../src/shared/domain/service-busy.error.js';
 import { createTestApp } from './support/create-app.js';
 
 class TestConflictError extends DomainError<typeof CommonErrorCode.Conflict> {
@@ -33,6 +34,11 @@ class ErrorProbeController {
   @Get('uncataloged')
   uncataloged(): never {
     throw new UncatalogedError('should not leak');
+  }
+
+  @Get('busy')
+  busy(): never {
+    throw new ServiceBusyError(1);
   }
 
   @Post('validated')
@@ -93,6 +99,14 @@ describe('error responses (e2e)', () => {
     expect(res.status).toBe(500);
     expect(res.body.code).toBe('COMMON.INTERNAL');
     expect(JSON.stringify(res.body)).not.toContain('should not leak');
+  });
+
+  it('ServiceBusyError → 503 SERVICE_UNAVAILABLE with Retry-After: 1', async () => {
+    const res = await request(app.getHttpServer()).get('/__errors/busy');
+
+    expect(res.status).toBe(503);
+    expect(res.headers['retry-after']).toBe('1');
+    expect(res.body.code).toBe('COMMON.SERVICE_UNAVAILABLE');
   });
 
   it('invalid body → 422 with field errors', async () => {
