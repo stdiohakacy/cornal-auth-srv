@@ -5,7 +5,7 @@ import { AppExceptionFilter } from './app-exception.filter.js';
 describe('AppExceptionFilter', () => {
   it('rethrows outside HTTP instead of writing an HTTP response', () => {
     const filter = new AppExceptionFilter(new RequestContext());
-    const switchToHttp = vi.fn();
+    const switchToHttp = vi.fn<() => unknown>();
     const host = {
       getType: () => 'rpc',
       switchToHttp,

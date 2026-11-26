@@ -9,6 +9,8 @@ export function testConfigFor(level: AppConfig['LOG_LEVEL']): AppConfig {
     TRUST_PROXY: 'loopback',
     DATABASE_URL: 'postgres://u:p@localhost:6432/db',
     DATABASE_DIRECT_URL: 'postgres://u:p@localhost:5432/db',
+    DB_POOL_MAX: 5,
+    OUTBOX_RELAY_ENABLED: true,
     REDIS_URL: 'redis://localhost:6379',
     NATS_URL: 'nats://localhost:4222',
   });

@@ -28,6 +28,13 @@ export const EnvSchema = z.object({
   /** Straight to PostgreSQL. Migrations and session-level features only. */
   DATABASE_DIRECT_URL: z.url(),
   DATABASE_REPLICA_URL: z.url().optional(),
+  /** Per-pod pool size. Keep small: PgBouncer multiplexes onto ~40 server connections. */
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
+  /** Disable only in tests or in a consumer-only deployment. */
+  OUTBOX_RELAY_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
   REDIS_URL: z.url(),
   NATS_URL: z.url(),
 });

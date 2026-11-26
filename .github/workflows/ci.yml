@@ -25,7 +25,6 @@ jobs:
       - run: pnpm lint
       - run: pnpm exec tsc --noEmit
       - run: pnpm test
-      - run: pnpm test:e2e
       - run: pnpm build
 
   integration:
@@ -49,10 +48,8 @@ jobs:
           --health-cmd "redis-cli ping"
           --health-interval 2s --health-timeout 3s --health-retries 30
     env:
-      DATABASE_URL: postgres://cornal_auth:cornal_auth@localhost:5432/cornal_auth
-      DATABASE_DIRECT_URL: postgres://cornal_auth:cornal_auth@localhost:5432/cornal_auth
-      REDIS_URL: redis://localhost:6379
-      NATS_URL: nats://localhost:4222
+      # Global setup creates cornal_auth_<project> databases on this server for each run.
+      TEST_DATABASE_URL: postgres://cornal_auth:cornal_auth@localhost:5432/cornal_auth
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -64,3 +61,4 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:int
+      - run: pnpm test:e2e

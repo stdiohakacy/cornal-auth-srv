@@ -22,21 +22,21 @@ describe('GET /health (e2e)', () => {
   });
 
   it('readiness is ok when every registered dependency is up', async () => {
-    app.get(ReadinessRegistry).register('postgres', async () => true);
+    app.get(ReadinessRegistry).register('fake-db', async () => true);
 
     const res = await request(app.getHttpServer()).get('/health/ready');
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       status: 'ok',
-      info: { postgres: { status: 'up' } },
+      info: { 'fake-db': { status: 'up' } },
     });
   });
 
   it('readiness returns 503 and names the failing dependency', async () => {
     const registry = app.get(ReadinessRegistry);
-    registry.register('postgres', async () => true);
-    registry.register('redis', async () => {
+    registry.register('fake-db', async () => true);
+    registry.register('fake-cache', async () => {
       throw new Error('ECONNREFUSED');
     });
 
@@ -45,13 +45,20 @@ describe('GET /health (e2e)', () => {
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({
       status: 'error',
-      error: { redis: { status: 'down' } },
-      info: { postgres: { status: 'up' } },
+      error: { 'fake-cache': { status: 'down' } },
+      info: { 'fake-db': { status: 'up' } },
     });
   });
 
+  it('readiness reports postgres up from the real database', async () => {
+    const res = await request(app.getHttpServer()).get('/health/ready');
+
+    expect(res.status).toBe(200);
+    expect(res.body.info.postgres.status).toBe('up');
+  });
+
   it('liveness stays 200 while a dependency is down', async () => {
-    app.get(ReadinessRegistry).register('redis', async () => false);
+    app.get(ReadinessRegistry).register('fake-cache', async () => false);
 
     await request(app.getHttpServer()).get('/health').expect(200);
   });
