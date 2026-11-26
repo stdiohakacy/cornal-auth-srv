@@ -1,10 +1,18 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
+import { type DynamicModule, Module } from '@nestjs/common';
+import { AppConfigModule } from './config/app-config.module.js';
+import type { AppConfig } from './config/env.schema.js';
+import { HealthModule } from './health/health.module.js';
 
-@Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
-})
-export class AppModule {}
+/**
+ * One image, three roles (`login` | `api` | `worker`). Each phase adds its modules to the
+ * role(s) that serve them, so a bug in admin endpoints cannot take the login fleet down.
+ */
+@Module({})
+export class AppModule {
+  static forRole(config: AppConfig): DynamicModule {
+    return {
+      module: AppModule,
+      imports: [AppConfigModule.forRoot(config), HealthModule],
+    };
+  }
+}

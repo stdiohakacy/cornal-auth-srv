@@ -7,6 +7,27 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
-    include: ['**/*.spec.ts'],
+    projects: [
+      {
+        extends: true,
+        test: { name: 'unit', include: ['src/**/*.spec.ts'] },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'integration',
+          include: ['test/integration/**/*.int-spec.ts'],
+          fileParallelism: false,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'e2e',
+          include: ['test/e2e/**/*.e2e-spec.ts'],
+          fileParallelism: false,
+        },
+      },
+    ],
   },
 });
