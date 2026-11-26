@@ -97,6 +97,53 @@ describe('parseConfig', () => {
     });
   });
 
+  it('EMAIL_VERIFICATION_URL has a local default and accepts a URL', () => {
+    expect(parseConfig(minimalEnv)).toMatchObject({
+      ok: true,
+      value: {
+        EMAIL_VERIFICATION_URL: 'http://localhost:3000/verify-email',
+        EMAIL_TRANSPORT: 'log',
+      },
+    });
+  });
+
+  it('PASSWORD_PEPPER must be at least 32 characters when set', () => {
+    expect(parseConfig({ ...minimalEnv, PASSWORD_PEPPER: 'short' }).ok).toBe(
+      false,
+    );
+    expect(
+      parseConfig({ ...minimalEnv, PASSWORD_PEPPER: 'p'.repeat(32) }).ok,
+    ).toBe(true);
+  });
+
+  it('refuses the log email transport in production (it would log secret links)', () => {
+    const result = parseConfig({
+      ...minimalEnv,
+      NODE_ENV: 'production',
+      EMAIL_TRANSPORT: 'log',
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toContain('EMAIL_TRANSPORT');
+  });
+
+  it('APP_LOGIN_URL defaults locally; UV_THREADPOOL_SIZE is optional and bounded', () => {
+    expect(parseConfig(minimalEnv)).toMatchObject({
+      ok: true,
+      value: { APP_LOGIN_URL: 'http://localhost:3000/login' },
+    });
+    expect(
+      parseConfig({ ...minimalEnv, UV_THREADPOOL_SIZE: '16' }),
+    ).toMatchObject({
+      ok: true,
+      value: { UV_THREADPOOL_SIZE: 16 },
+    });
+    expect(parseConfig({ ...minimalEnv, UV_THREADPOOL_SIZE: '0' }).ok).toBe(
+      false,
+    );
+  });
+
   it('.env.example satisfies the schema', () => {
     const example = parseEnv(
       readFileSync(new URL('../../.env.example', import.meta.url), 'utf8'),

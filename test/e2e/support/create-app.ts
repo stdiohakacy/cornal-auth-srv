@@ -1,4 +1,5 @@
-import type { Type } from '@nestjs/common';
+import { testRedisUrl } from '../../integration/support/redis.js';
+import type { ModuleMetadata, Type } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../src/app.module.js';
@@ -19,20 +20,31 @@ export const testConfig = (): AppConfig =>
     DATABASE_DIRECT_URL: testDatabaseUrl(),
     DB_POOL_MAX: 2,
     OUTBOX_RELAY_ENABLED: false,
-    REDIS_URL: 'redis://localhost:6379',
+    REDIS_URL: testRedisUrl(),
     NATS_URL: 'nats://localhost:4222',
+    EMAIL_VERIFICATION_URL: 'http://localhost:3000/verify-email',
+    APP_LOGIN_URL: 'http://localhost:3000/login',
+    EMAIL_TRANSPORT: 'log',
   });
 
 /** Boots the real HTTP pipeline (configureHttp) so e2e tests exercise production wiring. */
 export async function createTestApp(
   overrides: Partial<AppConfig> = {},
-  extra: { controllers?: Type[] } = {},
+  extra: {
+    controllers?: Type[];
+    imports?: NonNullable<ModuleMetadata['imports']>;
+    providers?: { token: unknown; value: unknown }[];
+  } = {},
 ): Promise<NestExpressApplication> {
   const config: AppConfig = Object.freeze({ ...testConfig(), ...overrides });
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule.forRole(config)],
+  let builder = Test.createTestingModule({
+    imports: [AppModule.forRole(config), ...(extra.imports ?? [])],
     controllers: extra.controllers ?? [],
-  }).compile();
+  });
+  for (const { token, value } of extra.providers ?? []) {
+    builder = builder.overrideProvider(token).useValue(value);
+  }
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>();
   configureHttp(app, config);
   await app.init();

@@ -57,6 +57,13 @@ describe('GET /health (e2e)', () => {
     expect(res.body.info.postgres.status).toBe('up');
   });
 
+  it('readiness reports redis up from the real server', async () => {
+    const res = await request(app.getHttpServer()).get('/health/ready');
+
+    expect(res.status).toBe(200);
+    expect(res.body.info.redis.status).toBe('up');
+  });
+
   it('liveness stays 200 while a dependency is down', async () => {
     app.get(ReadinessRegistry).register('fake-cache', async () => false);
 
