@@ -7,6 +7,12 @@ coverage/
 # env
 .env*
 !.env.example
+# secrets (JWT signing keys, TLS keys, local secret files)
+*.pem
+*.key
+secrets/
+# agent workflow scratch (plan ledgers, review packages)
+.superpowers/
 # logs / OS
 *.log
 .DS_Store
@@ -14,3 +20,4 @@ coverage/
 .claude/settings.local.json
 .claude/.typecheck-pending
 .claude/.typecheck-tries
+.env

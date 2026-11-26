@@ -1,10 +1,33 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "rules": {
-    "typescript/no-explicit-any": "off",
-    "typescript/no-floating-promises": "error"
-  },
+  "plugins": ["typescript", "import", "vitest", "oxc", "eslint", "unicorn"],
   "env": {
     "node": true
-  }
+  },
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/only-throw-error": "error",
+    "typescript/return-await": ["error", "in-try-catch"],
+    "import/no-cycle": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/**/domain/**", "src/**/application/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@nestjs/*", "typeorm", "**/infrastructure/**"],
+                "message": "Domain/application must stay framework-free."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

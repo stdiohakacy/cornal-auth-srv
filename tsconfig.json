@@ -22,6 +22,9 @@
       "vitest/globals",
       "node"
     ],
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true
   }
 }
