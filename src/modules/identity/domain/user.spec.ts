@@ -98,4 +98,38 @@ describe('User', () => {
       'identity.user.registration_attempted',
     ]);
   });
+
+  it('requestPasswordReset raises password_reset_requested', () => {
+    const user = registered();
+    user.pullEvents();
+
+    user.requestPasswordReset(now);
+
+    expect(user.pullEvents().map((e) => e.type)).toEqual([
+      'identity.user.password_reset_requested',
+    ]);
+  });
+
+  it('resetPassword replaces hash, bumps tokenVersion, unlocks, verifies email, raises password_changed', () => {
+    const user = registered();
+    user.lock(now, 60_000);
+    user.pullEvents();
+    const later = new Date(now.getTime() + 5_000);
+
+    user.resetPassword('$argon2id$new', later);
+
+    expect(user.passwordHash).toBe('$argon2id$new');
+    expect(user.tokenVersion).toBe(1);
+    expect(user.status).toBe('active');
+    expect(user.lockedUntil).toBeNull();
+    expect(user.emailVerifiedAt).toEqual(later);
+    // The link proved email ownership: email_verified first, then password_changed.
+    expect(user.pullEvents()).toEqual([
+      expect.objectContaining({ type: 'identity.user.email_verified' }),
+      expect.objectContaining({
+        type: 'identity.user.password_changed',
+        payload: { reason: 'reset' },
+      }),
+    ]);
+  });
 });

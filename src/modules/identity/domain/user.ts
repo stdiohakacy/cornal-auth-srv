@@ -18,7 +18,12 @@ export type UserEvent =
   | DomainEvent<'identity.user.registered', { email: string }>
   | DomainEvent<'identity.user.email_verified', Record<string, never>>
   | DomainEvent<'identity.user.locked', { until: string }>
-  | DomainEvent<'identity.user.registration_attempted', Record<string, never>>;
+  | DomainEvent<'identity.user.registration_attempted', Record<string, never>>
+  | DomainEvent<'identity.user.password_reset_requested', Record<string, never>>
+  | DomainEvent<
+      'identity.user.password_changed',
+      { reason: 'reset' | 'change' }
+    >;
 
 export type UserProps = {
   email: Email;
@@ -111,6 +116,41 @@ export class User extends AggregateRoot<UserId, UserProps, UserEvent> {
    * Someone tried to register with this account's email. The caller answers exactly as for a new
    * account (no enumeration); the owner is told by email instead.
    */
+  /** The worker answers this event with a single-use reset link (the token never enters the outbox). */
+  requestPasswordReset(now: Date): void {
+    this.raise(
+      createEvent({
+        type: 'identity.user.password_reset_requested',
+        aggregateType: 'User',
+        aggregateId: this.id,
+        payload: {},
+        occurredAt: now,
+      }),
+    );
+  }
+
+  /**
+   * New password through an emailed link. The link proves email ownership, so the email becomes
+   * verified and any lock is lifted. tokenVersion++ invalidates every issued access token.
+   */
+  resetPassword(newPasswordHash: string, now: Date): void {
+    this.props.passwordHash = newPasswordHash;
+    this.props.tokenVersion += 1;
+    this.props.status =
+      this.props.status === 'disabled' ? 'disabled' : 'active';
+    this.props.lockedUntil = null;
+    this.verifyEmail(now);
+    this.raise(
+      createEvent({
+        type: 'identity.user.password_changed',
+        aggregateType: 'User',
+        aggregateId: this.id,
+        payload: { reason: 'reset' as const },
+        occurredAt: now,
+      }),
+    );
+  }
+
   noteRegistrationAttempt(now: Date): void {
     this.raise(
       createEvent({

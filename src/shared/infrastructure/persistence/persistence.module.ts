@@ -7,6 +7,7 @@ import { APP_CONFIG, type AppConfig } from '../../../config/env.schema.js';
 import { ReadinessRegistry } from '../../../health/readiness.registry.js';
 import { UNIT_OF_WORK } from '../../application/ports.js';
 import { OUTBOX_RETRY, OutboxDeadLetterAlerts } from './outbox-policy.js';
+import { OutboxTopics } from './outbox-topics.js';
 import { TransactionContext } from './transaction-context.js';
 import { TypeOrmUnitOfWork } from './typeorm-unit-of-work.js';
 
@@ -39,6 +40,7 @@ import { TypeOrmUnitOfWork } from './typeorm-unit-of-work.js';
   ],
   providers: [
     { provide: TransactionContext, useValue: new TransactionContext() },
+    { provide: OutboxTopics, useValue: new OutboxTopics() },
     { provide: UNIT_OF_WORK, useClass: TypeOrmUnitOfWork },
     OutboxDeadLetterAlerts,
     {
@@ -51,7 +53,7 @@ import { TypeOrmUnitOfWork } from './typeorm-unit-of-work.js';
         ),
     },
   ],
-  exports: [TransactionContext, UNIT_OF_WORK],
+  exports: [TransactionContext, UNIT_OF_WORK, OutboxTopics],
 })
 export class PersistenceModule implements OnModuleInit {
   constructor(

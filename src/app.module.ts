@@ -6,6 +6,7 @@ import { IdentityHttpModule } from './modules/identity/identity-http.module.js';
 import { IdentityWorkerModule } from './modules/identity/identity-worker.module.js';
 import { assertNever } from './shared/domain/guard.js';
 import { ClockModule } from './shared/infrastructure/clock.module.js';
+import { AppMailModule } from './shared/infrastructure/mail/mail.module.js';
 import { LoggingModule } from './shared/infrastructure/logging/logging.module.js';
 import { PersistenceModule } from './shared/infrastructure/persistence/persistence.module.js';
 import { RedisModule } from './shared/infrastructure/redis/redis.module.js';
@@ -42,6 +43,7 @@ export class AppModule {
         PersistenceModule,
         RedisModule,
         ClockModule,
+        AppMailModule,
         ...roleModules(config.APP_ROLE),
       ],
     };

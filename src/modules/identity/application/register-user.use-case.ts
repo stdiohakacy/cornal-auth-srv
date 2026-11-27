@@ -1,22 +1,30 @@
 import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { ok, type Result } from '../../../shared/domain/result.js';
+import { err, ok, type Result } from '../../../shared/domain/result.js';
 import type { ServiceBusyError } from '../../../shared/domain/service-busy.error.js';
 import { Email } from '../domain/email.js';
 import {
   EmailTakenError,
   type InvalidEmailError,
+  PasswordBreachedError,
   type WeakPasswordError,
 } from '../domain/identity.errors.js';
 import { checkPasswordPolicy } from '../domain/password-policy.js';
 import { User } from '../domain/user.js';
-import type { PasswordHasher, UserRepository } from './ports.js';
+import type {
+  BreachedPasswordChecker,
+  PasswordHasher,
+  UserRepository,
+} from './ports.js';
 
 export type RegisterUserInput = {
   readonly email: string;
   readonly password: string;
 };
 export type RegisterUserError =
-  InvalidEmailError | WeakPasswordError | ServiceBusyError;
+  | InvalidEmailError
+  | WeakPasswordError
+  | PasswordBreachedError
+  | ServiceBusyError;
 /** Identical for new and existing emails: the response never reveals whether an account exists. */
 export type RegisterUserOutcome = { readonly status: 'accepted' };
 
@@ -30,6 +38,7 @@ export class RegisterUserUseCase {
   constructor(
     private readonly users: UserRepository,
     private readonly hasher: PasswordHasher,
+    private readonly breaches: BreachedPasswordChecker,
     private readonly uow: UnitOfWork,
     private readonly clock: Clock,
   ) {}
@@ -41,6 +50,8 @@ export class RegisterUserUseCase {
     if (!policy.ok) return policy;
     const email = Email.create(input.email);
     if (!email.ok) return email;
+    if (await this.breaches.isBreached(input.password))
+      return err(new PasswordBreachedError());
 
     // Argon2 runs outside the transaction (never hold a DB connection while hashing), and runs
     // for existing emails too, so both paths cost the same time.

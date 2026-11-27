@@ -11,6 +11,11 @@ type Limit = { readonly limit: number; readonly ttl: number };
 export const RATE_LIMITS = {
   register: { ip: { limit: 10, ttl: HOUR }, email: { limit: 3, ttl: HOUR } },
   verifyEmail: { ip: { limit: 30, ttl: 15 * MINUTE } },
+  forgotPassword: {
+    ip: { limit: 10, ttl: HOUR },
+    email: { limit: 3, ttl: HOUR },
+  },
+  resetPassword: { ip: { limit: 20, ttl: 15 * MINUTE } },
   login: {
     ip: { limit: 20, ttl: MINUTE },
     email: { limit: 10, ttl: 15 * MINUTE },

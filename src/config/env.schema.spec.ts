@@ -144,6 +144,42 @@ describe('parseConfig', () => {
     );
   });
 
+  it('EMAIL_TRANSPORT smtp requires SMTP_URL', () => {
+    expect(
+      parseConfig({ ...minimalEnv, EMAIL_TRANSPORT: 'smtp' }),
+    ).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('SMTP_URL'),
+    });
+
+    expect(
+      parseConfig({
+        ...minimalEnv,
+        EMAIL_TRANSPORT: 'smtp',
+        SMTP_URL: 'smtp://localhost:1025',
+      }).ok,
+    ).toBe(true);
+  });
+
+  it('EMAIL_FROM has a default', () => {
+    expect(parseConfig(minimalEnv)).toMatchObject({
+      ok: true,
+      value: { EMAIL_FROM: 'Cornal <no-reply@cornal.local>' },
+    });
+  });
+
+  it('PASSWORD_RESET_URL defaults locally; PASSWORD_BREACH_CHECK "false" becomes false', () => {
+    expect(
+      parseConfig({ ...minimalEnv, PASSWORD_BREACH_CHECK: 'false' }),
+    ).toMatchObject({
+      ok: true,
+      value: {
+        PASSWORD_RESET_URL: 'http://localhost:3000/reset-password',
+        PASSWORD_BREACH_CHECK: false,
+      },
+    });
+  });
+
   it('.env.example satisfies the schema', () => {
     const example = parseEnv(
       readFileSync(new URL('../../.env.example', import.meta.url), 'utf8'),

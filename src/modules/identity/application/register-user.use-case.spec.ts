@@ -1,6 +1,7 @@
 import { err } from '../../../shared/domain/result.js';
 import { ServiceBusyError } from '../../../shared/domain/service-busy.error.js';
 import {
+  fakeBreachChecker,
   fakeHasher,
   fixedClock,
   InMemoryUserRepository,
@@ -13,10 +14,18 @@ const ACCEPTED = { ok: true, value: { status: 'accepted' } };
 function setup() {
   const users = new InMemoryUserRepository();
   const { hasher, hash } = fakeHasher();
+  const breached = fakeBreachChecker();
   return {
     users,
     hash,
-    useCase: new RegisterUserUseCase(users, hasher, passthroughUow, fixedClock),
+    breached,
+    useCase: new RegisterUserUseCase(
+      users,
+      hasher,
+      breached.checker,
+      passthroughUow,
+      fixedClock,
+    ),
   };
 }
 
@@ -49,6 +58,22 @@ describe('RegisterUserUseCase', () => {
     expect(result).toMatchObject({
       ok: false,
       error: { code: 'IDENTITY.WEAK_PASSWORD' },
+    });
+    expect(hash).not.toHaveBeenCalled();
+  });
+
+  it('breached password → PasswordBreached, hasher not called', async () => {
+    const { useCase, hash, breached } = setup();
+    breached.isBreached.mockResolvedValueOnce(true);
+
+    expect(
+      await useCase.execute({
+        email: 'a@b.co',
+        password: 'correct-horse-battery',
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'IDENTITY.PASSWORD_BREACHED' },
     });
     expect(hash).not.toHaveBeenCalled();
   });

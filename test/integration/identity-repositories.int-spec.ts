@@ -146,6 +146,32 @@ describe('identity repositories (integration)', () => {
     expect(result).toEqual(ok(undefined));
   });
 
+  it('findValid returns the owner without consuming', async () => {
+    const user = registerUser();
+    await saveInTx(user);
+    const tokenHash = hashToken();
+    await uow.run(async () => {
+      await tokens.issue({
+        purpose: 'password_reset',
+        userId: user.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      return ok(undefined);
+    });
+
+    expect(
+      await tokens.findValid('password_reset', tokenHash, new Date()),
+    ).toEqual({ userId: user.id });
+    expect(
+      await tokens.findValid('email_verify', tokenHash, new Date()),
+    ).toBeUndefined();
+    const consumed = await uow.run(async () =>
+      ok(await tokens.consume('password_reset', tokenHash, new Date())),
+    );
+    expect(consumed).toEqual(ok({ userId: user.id }));
+  });
+
   it('revokeOpen makes earlier tokens unusable', async () => {
     const user = registerUser();
     await saveInTx(user);

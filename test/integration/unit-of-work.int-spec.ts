@@ -13,11 +13,15 @@ import {
 } from '../../src/shared/domain/domain-event.js';
 import { err, ok } from '../../src/shared/domain/result.js';
 import { ConcurrencyConflictError } from '../../src/shared/infrastructure/persistence/concurrency-conflict.error.js';
+import { OutboxTopics } from '../../src/shared/infrastructure/persistence/outbox-topics.js';
 import { TransactionContext } from '../../src/shared/infrastructure/persistence/transaction-context.js';
 import { RequestContext } from '../../src/shared/infrastructure/request-context/request-context.js';
 import { createPersistenceApp } from './support/persistence-app.js';
 
-type CounterEvent = DomainEvent<'test.counter.incremented', { by: number }>;
+type CounterEvent = DomainEvent<
+  'test.counter.incremented' | 'test.counter.audited',
+  { by: number }
+>;
 
 class Counter extends AggregateRoot<string, { value: number }, CounterEvent> {
   static create(id: string): Counter {
@@ -37,6 +41,17 @@ class Counter extends AggregateRoot<string, { value: number }, CounterEvent> {
         aggregateType: 'Counter',
         aggregateId: this.id,
         payload: { by },
+      }),
+    );
+  }
+  /** Raises an event no consumer subscribes to. */
+  audit(): void {
+    this.raise(
+      createEvent({
+        type: 'test.counter.audited',
+        aggregateType: 'Counter',
+        aggregateId: this.id,
+        payload: { by: 0 },
       }),
     );
   }
@@ -101,6 +116,7 @@ describe('TypeOrmUnitOfWork (integration)', () => {
     dataSource = moduleRef.get(DataSource);
     uow = moduleRef.get<UnitOfWork>(UNIT_OF_WORK);
     repo = new CounterRepository(dataSource, moduleRef.get(TransactionContext));
+    moduleRef.get(OutboxTopics).register('test.counter.incremented');
     await dataSource.query(
       'CREATE TABLE IF NOT EXISTS it_counters (id uuid PRIMARY KEY, value int NOT NULL, version int NOT NULL)',
     );
@@ -199,6 +215,20 @@ describe('TypeOrmUnitOfWork (integration)', () => {
       ConcurrencyConflictError,
     );
     expect((await repo.findById(id))?.value).toBe(1);
+  });
+
+  it('events whose topic has no consumer are not written to the outbox', async () => {
+    await uow.run(async () => {
+      const counter = Counter.create(randomUUIDv7());
+      counter.increment(1);
+      counter.audit();
+      await repo.save(counter);
+      return ok(undefined);
+    });
+
+    expect((await messages()).map((m) => m.topic)).toEqual([
+      'test.counter.incremented',
+    ]);
   });
 
   it('write outside run throws InvariantViolation', async () => {

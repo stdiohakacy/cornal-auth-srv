@@ -4,6 +4,7 @@ import { DataSource, type EntityManager } from 'typeorm';
 import type { UnitOfWork } from '../../application/ports.js';
 import type { Err, Result } from '../../domain/result.js';
 import { RequestContext } from '../request-context/request-context.js';
+import { OutboxTopics } from './outbox-topics.js';
 import { TransactionContext } from './transaction-context.js';
 
 /** Thrown inside the transaction callback only to make TypeORM roll back; never escapes `run`. */
@@ -21,6 +22,7 @@ export class TypeOrmUnitOfWork implements UnitOfWork {
     private readonly tx: TransactionContext,
     private readonly outbox: Outbox<EntityManager>,
     private readonly request: RequestContext,
+    private readonly topics: OutboxTopics,
   ) {}
 
   async run<T, E>(work: () => Promise<Result<T, E>>): Promise<Result<T, E>> {
@@ -49,11 +51,11 @@ export class TypeOrmUnitOfWork implements UnitOfWork {
     }
   }
 
-  /** Writes every tracked aggregate's events to the outbox inside the same transaction. */
+  /** Writes the tracked aggregates' published events to the outbox inside the same transaction. */
   private async flushEvents(manager: EntityManager): Promise<void> {
-    const events = [...(this.tx.active?.tracked ?? [])].flatMap((aggregate) =>
-      aggregate.pullEvents(),
-    );
+    const events = [...(this.tx.active?.tracked ?? [])]
+      .flatMap((aggregate) => aggregate.pullEvents())
+      .filter((event) => this.topics.isPublished(event.type));
     if (events.length === 0) return;
     const meta = this.request.current();
     await this.outbox.add(

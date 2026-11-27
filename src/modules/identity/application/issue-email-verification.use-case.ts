@@ -1,6 +1,7 @@
 import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
 import { ok, type Result } from '../../../shared/domain/result.js';
 import type { UserId } from '../domain/user.js';
+import { issueTokenLink } from './issue-token-link.js';
 import type {
   EmailSender,
   OneTimeTokenRepository,
@@ -13,10 +14,7 @@ const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 export type IssueEmailVerificationOutcome =
   'sent' | 'already_verified' | 'user_missing';
 
-/**
- * Issues a fresh single-use token and emails it. Runs inside the caller's transaction (the outbox
- * consumer): if sending throws, the token row rolls back with it and the message is retried.
- */
+/** Worker side of registration: single-use verification link (see issueTokenLink). */
 export class IssueEmailVerificationUseCase {
   constructor(
     private readonly users: UserRepository,
@@ -35,23 +33,17 @@ export class IssueEmailVerificationUseCase {
       const user = await this.users.findById(input.userId);
       if (!user) return ok('user_missing' as const);
       if (user.emailVerifiedAt !== null) return ok('already_verified' as const);
-
-      const { raw, hash } = this.generator.generate();
-      await this.tokens.revokeOpen(user.id, 'email_verify');
-      await this.tokens.issue({
-        purpose: 'email_verify',
-        userId: user.id,
-        tokenHash: hash,
-        expiresAt: new Date(this.clock.now().getTime() + TOKEN_TTL_MS),
-      });
-
-      const link = new URL(this.verificationUrl);
-      link.searchParams.set('token', raw);
-      await this.emails.send({
-        to: user.email.value,
-        template: 'verify-email',
-        data: { link: link.toString() },
-      });
+      await issueTokenLink(
+        { tokens: this.tokens, generator: this.generator, emails: this.emails },
+        {
+          purpose: 'email_verify',
+          ttlMs: TOKEN_TTL_MS,
+          template: 'verify-email',
+          baseUrl: this.verificationUrl,
+        },
+        user,
+        this.clock.now(),
+      );
       return ok('sent' as const);
     });
   }

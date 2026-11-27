@@ -1,5 +1,6 @@
 import { availableParallelism } from 'node:os';
-import { Module } from '@nestjs/common';
+import { Module, type OnModuleInit } from '@nestjs/common';
+import { Mailer } from '@nestjs/mail';
 import type { Redis } from 'ioredis';
 import { DataSource } from 'typeorm';
 import { APP_CONFIG, type AppConfig } from '../../config/env.schema.js';
@@ -10,10 +11,13 @@ import {
   type UnitOfWork,
 } from '../../shared/application/ports.js';
 import { HashAdmissionGate } from '../../shared/infrastructure/hash-admission-gate.js';
+import { OutboxTopics } from '../../shared/infrastructure/persistence/outbox-topics.js';
 import { TransactionContext } from '../../shared/infrastructure/persistence/transaction-context.js';
 import { REDIS } from '../../shared/infrastructure/redis/redis.module.js';
 import { IssueEmailVerificationUseCase } from './application/issue-email-verification.use-case.js';
 import {
+  BREACHED_PASSWORD_CHECKER,
+  type BreachedPasswordChecker,
   EMAIL_SENDER,
   type EmailSender,
   LOGIN_ATTEMPT_COUNTER,
@@ -28,7 +32,11 @@ import {
   type UserRepository,
 } from './application/ports.js';
 import { NotifyRegistrationAttemptUseCase } from './application/notify-registration-attempt.use-case.js';
+import { IssuePasswordResetUseCase } from './application/issue-password-reset.use-case.js';
+import { NotifyPasswordChangedUseCase } from './application/notify-password-changed.use-case.js';
 import { RegisterUserUseCase } from './application/register-user.use-case.js';
+import { RequestPasswordResetUseCase } from './application/request-password-reset.use-case.js';
+import { ResetPasswordUseCase } from './application/reset-password.use-case.js';
 import { VerifyCredentialsUseCase } from './application/verify-credentials.use-case.js';
 import { VerifyEmailUseCase } from './application/verify-email.use-case.js';
 import {
@@ -37,7 +45,11 @@ import {
 } from './infrastructure/argon2-password-hasher.js';
 import { GatedPasswordHasher } from './infrastructure/gated-password-hasher.js';
 import { resolveHashConcurrency } from './infrastructure/hash-concurrency.js';
-import { LogEmailSender } from './infrastructure/log-email-sender.js';
+import {
+  HibpBreachedPasswordChecker,
+  NeverBreachedChecker,
+} from './infrastructure/hibp-breached-password-checker.js';
+import { MailerEmailSender } from './infrastructure/mailer-email-sender.js';
 import { NodeSecretTokenGenerator } from './infrastructure/node-secret-token-generator.js';
 import { RedisLoginAttemptCounter } from './infrastructure/redis-login-attempt-counter.js';
 import { TypeOrmOneTimeTokenRepository } from './infrastructure/typeorm-one-time-token.repository.js';
@@ -85,19 +97,38 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
       useFactory: (redis: Redis) => new RedisLoginAttemptCounter(redis),
     },
     {
+      provide: BREACHED_PASSWORD_CHECKER,
+      inject: [APP_CONFIG],
+      useFactory: (config: AppConfig) =>
+        config.PASSWORD_BREACH_CHECK
+          ? new HibpBreachedPasswordChecker()
+          : new NeverBreachedChecker(),
+    },
+    {
       provide: SECRET_TOKEN_GENERATOR,
       useValue: new NodeSecretTokenGenerator(),
     },
-    { provide: EMAIL_SENDER, useValue: new LogEmailSender() },
+    {
+      provide: EMAIL_SENDER,
+      inject: [Mailer],
+      useFactory: (mailer: Mailer) => new MailerEmailSender(mailer),
+    },
     {
       provide: RegisterUserUseCase,
-      inject: [USER_REPOSITORY, PASSWORD_HASHER, UNIT_OF_WORK, CLOCK],
+      inject: [
+        USER_REPOSITORY,
+        PASSWORD_HASHER,
+        BREACHED_PASSWORD_CHECKER,
+        UNIT_OF_WORK,
+        CLOCK,
+      ],
       useFactory: (
         users: UserRepository,
         hasher: PasswordHasher,
+        breaches: BreachedPasswordChecker,
         uow: UnitOfWork,
         clock: Clock,
-      ) => new RegisterUserUseCase(users, hasher, uow, clock),
+      ) => new RegisterUserUseCase(users, hasher, breaches, uow, clock),
     },
     {
       provide: VerifyEmailUseCase,
@@ -185,6 +216,82 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
           DUMMY_PASSWORD_HASH,
         ),
     },
+    {
+      provide: RequestPasswordResetUseCase,
+      inject: [USER_REPOSITORY, UNIT_OF_WORK, CLOCK],
+      useFactory: (users: UserRepository, uow: UnitOfWork, clock: Clock) =>
+        new RequestPasswordResetUseCase(users, uow, clock),
+    },
+    {
+      provide: IssuePasswordResetUseCase,
+      inject: [
+        USER_REPOSITORY,
+        ONE_TIME_TOKEN_REPOSITORY,
+        SECRET_TOKEN_GENERATOR,
+        EMAIL_SENDER,
+        UNIT_OF_WORK,
+        CLOCK,
+        APP_CONFIG,
+      ],
+      useFactory: (
+        users: UserRepository,
+        tokens: OneTimeTokenRepository,
+        generator: SecretTokenGenerator,
+        emails: EmailSender,
+        uow: UnitOfWork,
+        clock: Clock,
+        config: AppConfig,
+      ) =>
+        new IssuePasswordResetUseCase(
+          users,
+          tokens,
+          generator,
+          emails,
+          uow,
+          clock,
+          config.PASSWORD_RESET_URL,
+        ),
+    },
+    {
+      provide: ResetPasswordUseCase,
+      inject: [
+        USER_REPOSITORY,
+        ONE_TIME_TOKEN_REPOSITORY,
+        SECRET_TOKEN_GENERATOR,
+        PASSWORD_HASHER,
+        BREACHED_PASSWORD_CHECKER,
+        UNIT_OF_WORK,
+        CLOCK,
+      ],
+      useFactory: (
+        users: UserRepository,
+        tokens: OneTimeTokenRepository,
+        generator: SecretTokenGenerator,
+        hasher: PasswordHasher,
+        breaches: BreachedPasswordChecker,
+        uow: UnitOfWork,
+        clock: Clock,
+      ) =>
+        new ResetPasswordUseCase(
+          users,
+          tokens,
+          generator,
+          hasher,
+          breaches,
+          uow,
+          clock,
+        ),
+    },
+    {
+      provide: NotifyPasswordChangedUseCase,
+      inject: [USER_REPOSITORY, EMAIL_SENDER, APP_CONFIG],
+      useFactory: (
+        users: UserRepository,
+        emails: EmailSender,
+        config: AppConfig,
+      ) =>
+        new NotifyPasswordChangedUseCase(users, emails, config.APP_LOGIN_URL),
+    },
   ],
   exports: [
     NotifyRegistrationAttemptUseCase,
@@ -192,6 +299,22 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
     VerifyEmailUseCase,
     IssueEmailVerificationUseCase,
     VerifyCredentialsUseCase,
+    RequestPasswordResetUseCase,
+    IssuePasswordResetUseCase,
+    ResetPasswordUseCase,
+    NotifyPasswordChangedUseCase,
   ],
 })
-export class IdentityCoreModule {}
+export class IdentityCoreModule implements OnModuleInit {
+  constructor(private readonly topics: OutboxTopics) {}
+
+  /** Topics with a consumer in IdentityWorkerModule (see OutboxTopics for why this list exists). */
+  onModuleInit(): void {
+    this.topics.register(
+      'identity.user.registered',
+      'identity.user.registration_attempted',
+      'identity.user.password_reset_requested',
+      'identity.user.password_changed',
+    );
+  }
+}
