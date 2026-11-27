@@ -1,4 +1,4 @@
-import type { Clock } from '../../../shared/application/ports.js';
+import type { Clock } from '#src/shared/application/ports.js';
 import type { UserId } from '../domain/user.js';
 import type { UserRepository } from './ports.js';
 

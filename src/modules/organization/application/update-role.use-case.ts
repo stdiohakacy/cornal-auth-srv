@@ -1,7 +1,7 @@
-import type { Permission } from '../../../contracts/permissions.js';
-import type { UnitOfWork } from '../../../shared/application/ports.js';
-import { InvariantViolation } from '../../../shared/domain/domain-error.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import type { Permission } from '#src/contracts/permissions.js';
+import type { UnitOfWork } from '#src/shared/application/ports.js';
+import { InvariantViolation } from '#src/shared/domain/domain-error.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import { ensureCanTouch } from '../domain/authorization-policy.js';
 import {
   type InsufficientPrivilegeError,

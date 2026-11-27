@@ -1,4 +1,4 @@
-import { HashAdmissionGate } from '../../../shared/infrastructure/hash-admission-gate.js';
+import { HashAdmissionGate } from '#src/shared/infrastructure/hash-admission-gate.js';
 import type { Argon2PasswordHasher } from './argon2-password-hasher.js';
 import { GatedPasswordHasher } from './gated-password-hasher.js';
 

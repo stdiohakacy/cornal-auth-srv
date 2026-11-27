@@ -6,7 +6,7 @@ import {
 } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import { createLocalJWKSet, exportJWK, importPKCS8, type JWK } from 'jose';
-import { InvariantViolation } from '../../../shared/domain/domain-error.js';
+import { InvariantViolation } from '#src/shared/domain/domain-error.js';
 
 export type SigningKeyConfig = { readonly kid: string; readonly pem: string };
 type Signer = { readonly kid: string; readonly key: CryptoKey };

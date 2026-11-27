@@ -18,15 +18,15 @@ import {
   RefreshRequestSchema,
   type SessionInfoResponse,
   type TokenResponse,
-} from '../../../contracts/session.schemas.js';
+} from '#src/contracts/session.schemas.js';
 import {
   type SwitchOrganizationRequest,
   SwitchOrganizationRequestSchema,
-} from '../../../contracts/organization.schemas.js';
-import type { DomainError } from '../../../shared/domain/domain-error.js';
-import { unwrap } from '../../../shared/infrastructure/http/unwrap.js';
-import { AppThrottlerGuard } from '../../../shared/infrastructure/throttling/app-throttler.guard.js';
-import { RATE_LIMITS } from '../../../shared/infrastructure/throttling/rate-limits.js';
+} from '#src/contracts/organization.schemas.js';
+import type { DomainError } from '#src/shared/domain/domain-error.js';
+import { unwrap } from '#src/shared/infrastructure/http/unwrap.js';
+import { AppThrottlerGuard } from '#src/shared/infrastructure/throttling/app-throttler.guard.js';
+import { RATE_LIMITS } from '#src/shared/infrastructure/throttling/rate-limits.js';
 import type { IssuedTokens } from '../application/issued-tokens.js';
 import { LoginUseCase } from '../application/login.use-case.js';
 import { LogoutUseCase } from '../application/logout.use-case.js';

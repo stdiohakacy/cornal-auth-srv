@@ -10,13 +10,13 @@ Sources: `../CORNAL_AUTH_ARCHITECTURE_PLAYBOOK.md`, `../CORNAL_AUTH_SYSTEM_DESIG
 
 ## Layers
 - domain/: pure TS. Imports only src/shared/domain/* and src/contracts/error-codes.ts. NO @nestjs, typeorm, node:async_hooks, process.env.
-- application/: use cases + ports. NO @nestjs/*, NO typeorm. Wired in <m>.module.ts via useFactory + Symbol tokens.
+- application/: use cases + ports. NO @nestjs/*, NO typeorm. Wired in <m>-core.module.ts with `provideClass(Cls, [TOKEN, from(APP_CONFIG, c => c.X), fixed(v)], PORT?)` (shared/infrastructure/di) + Symbol tokens; hand-written useFactory only for adapters built from object literals.
 - infrastructure/: TypeORM records, mappers, repositories, crypto/jose/Redis adapters. Only layer that touches I/O.
 - presentation/: controllers/guards. Call use cases only; never repositories or aggregates.
 - Cross-module: depend on another module's exported use case (façade) adapted to your own port in <m>-core.module.ts, or consume its outbox topic. Never read another module's tables. NEVER forwardRef.
 
 ## ESM & TypeScript
-- Relative imports end in .js. No barrel index.ts. No require(), no __dirname (use import.meta.dirname).
+- Imports end in .js. Inside a module use relative paths; anything reached via `../../` or further uses `#src/...`. No barrel index.ts. No require(), no __dirname (use import.meta.dirname).
 - No `any`, no `!`, no `as` except at trusted boundaries (DB row → branded id). Use invariant()/first()/single().
 - `verbatimModuleSyntax` is on: pure types use `import type`; classes injected by constructor stay value imports (DI metadata).
 - Ports use Symbol tokens whose names differ from the type (USER_REPOSITORY / UserRepository).

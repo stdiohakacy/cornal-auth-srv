@@ -1,9 +1,9 @@
 import { Controller, Get, Header } from '@nestjs/common';
-import type { PermissionCatalogResponse } from '../../../contracts/organization.schemas.js';
+import type { PermissionCatalogResponse } from '#src/contracts/organization.schemas.js';
 import {
   PERMISSION_CATALOG_VERSION,
   PERMISSIONS,
-} from '../../../contracts/permissions.js';
+} from '#src/contracts/permissions.js';
 
 const ETAG = `"pcv-${PERMISSION_CATALOG_VERSION}"`;
 

@@ -1,6 +1,6 @@
-import { err, ok, type Result } from '../../../shared/domain/result.js';
-import { ServiceBusyError } from '../../../shared/domain/service-busy.error.js';
-import type { HashAdmissionGate } from '../../../shared/infrastructure/hash-admission-gate.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
+import { ServiceBusyError } from '#src/shared/domain/service-busy.error.js';
+import type { HashAdmissionGate } from '#src/shared/infrastructure/hash-admission-gate.js';
 import type { PasswordHasher } from '../application/ports.js';
 import type { Argon2PasswordHasher } from './argon2-password-hasher.js';
 

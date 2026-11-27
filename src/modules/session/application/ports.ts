@@ -1,5 +1,5 @@
-import type { DomainError } from '../../../shared/domain/domain-error.js';
-import type { Result } from '../../../shared/domain/result.js';
+import type { DomainError } from '#src/shared/domain/domain-error.js';
+import type { Result } from '#src/shared/domain/result.js';
 import type { Session, SessionId } from '../domain/session.js';
 
 /** Organization scope of an access token (absent when no org is selected). */

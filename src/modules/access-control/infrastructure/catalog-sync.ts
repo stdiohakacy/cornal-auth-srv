@@ -4,9 +4,9 @@ import {
   PERMISSIONS,
   SYSTEM_ROLES,
   type SystemRoleKey,
-} from '../../../contracts/permissions.js';
-import { InvariantViolation } from '../../../shared/domain/domain-error.js';
-import { first } from '../../../shared/domain/guard.js';
+} from '#src/contracts/permissions.js';
+import { InvariantViolation } from '#src/shared/domain/domain-error.js';
+import { first } from '#src/shared/domain/guard.js';
 
 export type SystemRoleIds = Readonly<Record<SystemRoleKey, string>>;
 

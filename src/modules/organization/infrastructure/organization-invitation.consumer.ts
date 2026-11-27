@@ -5,10 +5,10 @@ import { z } from 'zod';
 import {
   UNIT_OF_WORK,
   type UnitOfWork,
-} from '../../../shared/application/ports.js';
-import { ok } from '../../../shared/domain/result.js';
-import { TransactionContext } from '../../../shared/infrastructure/persistence/transaction-context.js';
-import { IssueOrgInvitationUseCase } from '../../identity/application/issue-org-invitation.use-case.js';
+} from '#src/shared/application/ports.js';
+import { ok } from '#src/shared/domain/result.js';
+import { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
+import { IssueOrgInvitationUseCase } from '#src/modules/identity/application/issue-org-invitation.use-case.js';
 
 /** Outbox message = the whole domain event; its data sits under `payload`. */
 const InvitationCreatedMessage = z.object({

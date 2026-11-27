@@ -1,4 +1,4 @@
-import { ok, type Result } from '../../../shared/domain/result.js';
+import { ok, type Result } from '#src/shared/domain/result.js';
 import type { UserId } from '../domain/user.js';
 import type { EmailSender, UserRepository } from './ports.js';
 

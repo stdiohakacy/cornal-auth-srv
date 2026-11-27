@@ -1,5 +1,5 @@
 import type { FactoryProvider } from '@nestjs/common';
-import { APP_CONFIG, type AppConfig } from '../../../config/env.schema.js';
+import { APP_CONFIG, type AppConfig } from '#src/config/env.schema.js';
 import { KeyRing } from './key-ring.js';
 
 export const KEY_RING = Symbol('KEY_RING');

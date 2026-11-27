@@ -1,9 +1,10 @@
 import { z } from 'zod';
+import { EmailInputSchema, PasswordInputSchema } from './common.schemas.js';
 
 /** Request/response contracts for /auth identity endpoints. Pure Zod: shareable with the frontend. */
 export const RegisterRequestSchema = z.strictObject({
-  email: z.string().max(254),
-  password: z.string().min(1).max(256),
+  email: EmailInputSchema,
+  password: PasswordInputSchema,
 });
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 
@@ -28,19 +29,19 @@ export const AcceptedResponseSchema = z.strictObject({
 export type AcceptedResponse = z.infer<typeof AcceptedResponseSchema>;
 
 export const ForgotPasswordRequestSchema = z.strictObject({
-  email: z.string().max(254),
+  email: EmailInputSchema,
 });
 export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordRequestSchema>;
 
 export const ResetPasswordRequestSchema = z.strictObject({
   token: SingleUseTokenSchema,
-  password: z.string().min(1).max(256),
+  password: PasswordInputSchema,
 });
 export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
 
 /** Signed-in password change; the current password is the step-up proof. */
 export const ChangePasswordRequestSchema = z.strictObject({
-  currentPassword: z.string().min(1).max(256),
-  newPassword: z.string().min(1).max(256),
+  currentPassword: PasswordInputSchema,
+  newPassword: PasswordInputSchema,
 });
 export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;

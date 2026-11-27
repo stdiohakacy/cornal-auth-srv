@@ -1,4 +1,4 @@
-import type { Id } from '../../../shared/domain/id.js';
+import type { Id } from '#src/shared/domain/id.js';
 import { Invitation } from './invitation.js';
 import { Membership } from './membership.js';
 import { Organization } from './organization.js';

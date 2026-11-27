@@ -6,6 +6,7 @@ const TEMPLATES: EmailTemplate[] = [
   'account-exists',
   'password-reset',
   'password-changed',
+  'org-invitation',
 ];
 
 describe('renderEmail', () => {
@@ -33,5 +34,33 @@ describe('renderEmail', () => {
 
     expect(email.html.value).not.toContain('<script>');
     expect(email.html.value).toContain('&lt;script&gt;');
+  });
+
+  it.each([
+    ['verify-email', 24 * 60 * 60 * 1000, 'expires in 24 hours'],
+    ['password-reset', 30 * 60 * 1000, 'expires in 30 minutes'],
+    ['org-invitation', 7 * 24 * 60 * 60 * 1000, 'expires in 7 days'],
+    ['verify-email', 2 * 60 * 60 * 1000, 'expires in 2 hours'],
+  ] as const)(
+    '%s states the lifetime it was issued with (%d ms)',
+    (template, expiresInMs, phrase) => {
+      const email = renderEmail({
+        to: 'a@b.co',
+        template,
+        data: { link: 'https://x.test/', expiresInMs },
+      });
+
+      expect(email.text).toContain(phrase);
+    },
+  );
+
+  it('names the organization in an invitation', () => {
+    const email = renderEmail({
+      to: 'a@b.co',
+      template: 'org-invitation',
+      data: { link: 'https://x.test/', orgName: 'Acme', expiresInMs: 1000 },
+    });
+
+    expect(email.subject).toContain('Acme');
   });
 });

@@ -21,6 +21,7 @@ Auth service của hệ thống microservices cornal.
 
 ## Quy ước
 - ESM: import tương đối phải có đuôi `.js`; dùng `import.meta.dirname`, không dùng `__dirname`.
+- Import ra khỏi thư mục cha (`../../` trở lên) trong `src/` dùng alias `#src/...` (package.json `imports`, condition `source` cho tsc/vitest); trong cùng module giữ `./`, `../`. `test/` vẫn dùng đường dẫn tương đối (globalSetup của vitest không nhận condition).
 - `APP_ROLE` = `login` | `api` | `worker`; module được ghép theo role trong `AppModule.forRole()`.
 - Ghi DB chỉ trong `uow.run()` (`UNIT_OF_WORK`); domain event được ghi vào outbox trong cùng transaction
 - Config chỉ đọc qua `APP_CONFIG` (đã parse bằng Zod), không đọc `process.env` trong code.

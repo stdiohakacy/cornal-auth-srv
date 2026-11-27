@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { parseId } from '../../../shared/domain/id.js';
+import { parseId } from '#src/shared/domain/id.js';
 import type { RefreshTokenFactory } from '../application/ports.js';
 import type { SessionId } from '../domain/session.js';
 

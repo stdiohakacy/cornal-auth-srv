@@ -47,7 +47,10 @@ describe('IssueEmailVerificationUseCase', () => {
     expect(email.sent.at(-1)).toEqual({
       to: 'a@b.co',
       template: 'verify-email',
-      data: { link: `${URL_BASE}?token=raw-2` },
+      data: {
+        link: `${URL_BASE}?token=raw-2`,
+        expiresInMs: 24 * 60 * 60 * 1000,
+      },
     });
   });
 

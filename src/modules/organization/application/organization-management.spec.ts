@@ -1,4 +1,4 @@
-import { SYSTEM_ROLES } from '../../../contracts/permissions.js';
+import { SYSTEM_ROLES } from '#src/contracts/permissions.js';
 import { Membership, type RoleId } from '../domain/membership.js';
 import { Organization } from '../domain/organization.js';
 import { Slug } from '../domain/slug.js';

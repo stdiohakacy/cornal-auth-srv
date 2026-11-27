@@ -1,5 +1,5 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import type { SessionId } from '../domain/session.js';
 import { SessionNotFoundError } from '../domain/session.errors.js';
 import type { SessionRepository } from './ports.js';

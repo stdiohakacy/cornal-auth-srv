@@ -4,9 +4,9 @@ import type { EntityManager } from 'typeorm';
 import {
   UNIT_OF_WORK,
   type UnitOfWork,
-} from '../../../shared/application/ports.js';
-import { ok } from '../../../shared/domain/result.js';
-import { TransactionContext } from '../../../shared/infrastructure/persistence/transaction-context.js';
+} from '#src/shared/application/ports.js';
+import { ok } from '#src/shared/domain/result.js';
+import { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
 import { RevokeAllSessionsUseCase } from '../application/revoke-all-sessions.use-case.js';
 
 const userIdOf = (payload: unknown): string => {

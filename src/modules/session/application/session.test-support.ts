@@ -1,7 +1,7 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { DomainError } from '../../../shared/domain/domain-error.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
-import { ConcurrencyConflictError } from '../../../shared/domain/concurrency-conflict.error.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { DomainError } from '#src/shared/domain/domain-error.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
+import { ConcurrencyConflictError } from '#src/shared/domain/concurrency-conflict.error.js';
 import type { Session, SessionId } from '../domain/session.js';
 import type {
   AccessClaims,

@@ -1,5 +1,5 @@
-import { err, ok, type Result } from '../../../shared/domain/result.js';
-import { ValueObject } from '../../../shared/domain/value-object.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
+import { ValueObject } from '#src/shared/domain/value-object.js';
 import { InvalidSlugError } from './organization.errors.js';
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])$/;

@@ -1,4 +1,4 @@
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import { InsufficientPrivilegeError } from './organization.errors.js';
 
 export const isSubset = (

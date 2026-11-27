@@ -41,7 +41,10 @@ describe('IssuePasswordResetUseCase', () => {
       {
         to: 'a@b.co',
         template: 'password-reset',
-        data: { link: 'https://app.test/reset-password?token=raw-1' },
+        data: {
+          link: 'https://app.test/reset-password?token=raw-1',
+          expiresInMs: 30 * 60 * 1000,
+        },
       },
     ]);
     expect(await useCase.execute({ userId: 'nope' as UserId })).toEqual({

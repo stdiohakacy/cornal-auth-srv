@@ -1,4 +1,4 @@
-import type { TransactionContext } from '../../../shared/infrastructure/persistence/transaction-context.js';
+import type { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
 import type { InvitationRepository } from '../application/ports.js';
 import type { Invitation } from '../domain/invitation.js';
 

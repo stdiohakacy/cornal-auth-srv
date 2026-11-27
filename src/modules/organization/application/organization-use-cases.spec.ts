@@ -1,11 +1,8 @@
 import {
   decodePermissionBits,
   hasPermission,
-} from '../../../sdk/permission-bits.js';
-import {
-  permissionCatalog,
-  SYSTEM_ROLES,
-} from '../../../contracts/permissions.js';
+} from '#src/sdk/permission-bits.js';
+import { permissionCatalog, SYSTEM_ROLES } from '#src/contracts/permissions.js';
 import { CreateOrganizationUseCase } from './create-organization.use-case.js';
 import { ListMembersUseCase } from './list-members.use-case.js';
 import {

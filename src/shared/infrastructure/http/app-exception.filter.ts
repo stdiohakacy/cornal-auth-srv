@@ -8,11 +8,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import {
-  CommonErrorCode,
-  type ErrorCode,
-} from '../../../contracts/error-codes.js';
-import { DomainError } from '../../domain/domain-error.js';
+import { CommonErrorCode, type ErrorCode } from '#src/contracts/error-codes.js';
+import { DomainError } from '#src/shared/domain/domain-error.js';
 import type { RequestContext } from '../request-context/request-context.js';
 import { ERROR_STATUS, httpStatusToCode, isErrorCode } from './error-status.js';
 import {

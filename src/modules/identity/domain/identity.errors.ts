@@ -1,5 +1,5 @@
-import { IdentityErrorCode } from '../../../contracts/error-codes.js';
-import { DomainError } from '../../../shared/domain/domain-error.js';
+import { IdentityErrorCode } from '#src/contracts/error-codes.js';
+import { DomainError } from '#src/shared/domain/domain-error.js';
 
 export class InvalidEmailError extends DomainError<
   typeof IdentityErrorCode.InvalidEmail

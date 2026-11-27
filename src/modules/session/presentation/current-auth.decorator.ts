@@ -1,5 +1,5 @@
 import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
-import { InvariantViolation } from '../../../shared/domain/domain-error.js';
+import { InvariantViolation } from '#src/shared/domain/domain-error.js';
 import type { AccessClaims } from '../application/ports.js';
 import type { AuthenticatedRequest } from './access-token.guard.js';
 

@@ -1,4 +1,4 @@
-import { CommonErrorCode } from '../../contracts/error-codes.js';
+import { CommonErrorCode } from '#src/contracts/error-codes.js';
 import { DomainError } from './domain-error.js';
 
 /**

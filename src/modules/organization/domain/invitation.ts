@@ -1,9 +1,9 @@
-import { AggregateRoot } from '../../../shared/domain/aggregate-root.js';
+import { AggregateRoot } from '#src/shared/domain/aggregate-root.js';
 import {
   createEvent,
   type DomainEvent,
-} from '../../../shared/domain/domain-event.js';
-import { newId, type Id } from '../../../shared/domain/id.js';
+} from '#src/shared/domain/domain-event.js';
+import { newId, type Id } from '#src/shared/domain/id.js';
 
 export type InvitationId = Id<'Invitation'>;
 

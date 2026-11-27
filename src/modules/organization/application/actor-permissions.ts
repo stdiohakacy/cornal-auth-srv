@@ -1,4 +1,4 @@
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import { InsufficientPrivilegeError } from '../domain/organization.errors.js';
 import type { OrganizationReads } from './ports.js';
 

@@ -1,10 +1,10 @@
-import { AggregateRoot } from '../../../shared/domain/aggregate-root.js';
+import { AggregateRoot } from '#src/shared/domain/aggregate-root.js';
 import {
   createEvent,
   type DomainEvent,
-} from '../../../shared/domain/domain-event.js';
-import { newId, type Id } from '../../../shared/domain/id.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+} from '#src/shared/domain/domain-event.js';
+import { newId, type Id } from '#src/shared/domain/id.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import { RefreshConflictError, SessionInvalidError } from './session.errors.js';
 
 export type SessionId = Id<'Session'>;

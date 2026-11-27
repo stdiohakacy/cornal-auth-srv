@@ -56,7 +56,11 @@ describe('org invitation façades', () => {
     expect(mail.sent.at(-1)).toEqual({
       to: 'new@b.co',
       template: 'org-invitation',
-      data: { link: `${URL_BASE}?token=raw-2`, orgName: 'Acme' },
+      data: {
+        link: `${URL_BASE}?token=raw-2`,
+        orgName: 'Acme',
+        expiresInMs: 7 * 24 * 60 * 60 * 1000,
+      },
     });
     const open = await new ListOrgInvitationsUseCase(
       tokens,

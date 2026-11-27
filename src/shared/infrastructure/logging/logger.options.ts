@@ -1,7 +1,7 @@
 import { randomUUIDv7 } from 'node:crypto';
 import type { LoggerOptions } from 'pino';
 import type { Options } from 'pino-http';
-import type { AppConfig } from '../../../config/env.schema.js';
+import type { AppConfig } from '#src/config/env.schema.js';
 import type { RequestContext } from '../request-context/request-context.js';
 
 /** Secrets that must never reach a log line, whatever object they appear in. */

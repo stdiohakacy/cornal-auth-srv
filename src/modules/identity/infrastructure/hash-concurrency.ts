@@ -1,4 +1,4 @@
-import type { AppConfig } from '../../../config/env.schema.js';
+import type { AppConfig } from '#src/config/env.schema.js';
 
 /** libuv's default when UV_THREADPOOL_SIZE is unset. */
 const DEFAULT_THREADPOOL_SIZE = 4;

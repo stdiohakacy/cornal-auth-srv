@@ -1,14 +1,16 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { ConcurrencyConflictError } from '../../../shared/domain/concurrency-conflict.error.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
-import type { Session } from '../domain/session.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { ConcurrencyConflictError } from '#src/shared/domain/concurrency-conflict.error.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
+import type { Session, SessionId } from '../domain/session.js';
 import {
   RefreshConflictError,
   SessionInvalidError,
 } from '../domain/session.errors.js';
 import {
+  idleTtlMs,
   type IssuedTokens,
-  secondsUntil,
+  issueTokenPair,
+  type SessionGrant,
   type SessionTtl,
 } from './issued-tokens.js';
 import {
@@ -18,20 +20,21 @@ import {
   type OrgContextReader,
   type RefreshTokenFactory,
   type SessionRepository,
-  toOrgClaims,
   type UserAuthStateReader,
 } from './ports.js';
 
 type Outcome =
-  | {
-      readonly kind: 'rotated';
-      readonly session: Session;
-      readonly secret: string;
-      readonly tokenVersion: number;
-      readonly org: OrgContext | undefined;
-    }
+  | (SessionGrant & { readonly kind: 'rotated'; readonly secret: string })
   | { readonly kind: 'invalid' }
   | { readonly kind: 'conflict' };
+
+type RotationInput = {
+  readonly sessionId: SessionId;
+  readonly hash: string;
+  readonly now: Date;
+  readonly ip: string | null;
+  readonly userAgent: string | null;
+};
 
 /**
  * Refresh-token rotation. Also recomputes the organization context, so role changes reach the
@@ -61,77 +64,73 @@ export class RefreshSessionUseCase {
     if (!parsed) return err(new SessionInvalidError());
     const now = this.clock.now();
 
-    let outcome: Outcome;
-    try {
-      const result = await this.uow.run(
-        async (): Promise<Result<Outcome, never>> => {
-          const session = await this.sessions.findById(parsed.sessionId);
-          if (!session) return ok({ kind: 'invalid' });
-
-          const state = await this.authState.get(session.userId);
-          if (!state?.canAuthenticate) {
-            session.revoke('user_inactive', now);
-            await this.saveIfChanged(session);
-            return ok({ kind: 'invalid' });
-          }
-
-          const next = this.refreshTokens.newSecret();
-          const rotated = session.rotate({
-            presentedHash: parsed.hash,
-            nextHash: next.hash,
-            now,
-            idleTtlMs: this.ttl.idleSeconds * 1000,
-            ip: input.ip,
-            userAgent: input.userAgent,
-          });
-          if (!rotated.ok) {
-            await this.saveIfChanged(session); // persists a reuse revocation
-            return ok({
-              kind:
-                rotated.error instanceof RefreshConflictError
-                  ? 'conflict'
-                  : 'invalid',
-            });
-          }
-
-          const org = await this.currentOrg(session);
-          if (!org) session.selectOrganization(null);
-          await this.sessions.save(session);
-          return ok({
-            kind: 'rotated',
-            session,
-            secret: next.secret,
-            tokenVersion: state.tokenVersion,
-            org,
-          });
-        },
-      );
-      if (!result.ok) return result; // never: the work only returns ok
-      outcome = result.value;
-    } catch (error) {
-      if (error instanceof ConcurrencyConflictError)
-        return err(new RefreshConflictError());
-      throw error;
-    }
-
+    const outcome = await this.rotateCommitted({ ...input, ...parsed, now });
     if (outcome.kind === 'conflict') return err(new RefreshConflictError());
     if (outcome.kind === 'invalid') return err(new SessionInvalidError());
+    return ok(
+      await issueTokenPair(
+        { access: this.accessTokens, refresh: this.refreshTokens },
+        { ...outcome, now },
+      ),
+    );
+  }
 
-    const { session, secret, tokenVersion, org } = outcome;
-    const access = await this.accessTokens.issue({
-      sub: session.userId,
-      sid: session.id,
-      uv: tokenVersion,
-      amr: session.snapshot.amr,
-      authTime: session.snapshot.authTime,
-      ...(org ? { org: toOrgClaims(org) } : {}),
+  /** The transactional part; a lost optimistic-lock race reads as a conflict. */
+  private async rotateCommitted(input: RotationInput): Promise<Outcome> {
+    try {
+      const result = await this.uow.run(
+        async (): Promise<Result<Outcome, never>> =>
+          ok(await this.rotate(input)),
+      );
+      if (!result.ok) return result.error; // never: the work only returns ok
+      return result.value;
+    } catch (error) {
+      if (error instanceof ConcurrencyConflictError)
+        return { kind: 'conflict' };
+      throw error;
+    }
+  }
+
+  private async rotate(input: RotationInput): Promise<Outcome> {
+    const session = await this.sessions.findById(input.sessionId);
+    if (!session) return { kind: 'invalid' };
+
+    const state = await this.authState.get(session.userId);
+    if (!state?.canAuthenticate) {
+      session.revoke('user_inactive', input.now);
+      await this.saveIfChanged(session);
+      return { kind: 'invalid' };
+    }
+
+    const next = this.refreshTokens.newSecret();
+    const rotated = session.rotate({
+      presentedHash: input.hash,
+      nextHash: next.hash,
+      now: input.now,
+      idleTtlMs: idleTtlMs(this.ttl),
+      ip: input.ip,
+      userAgent: input.userAgent,
     });
-    return ok({
-      accessToken: access.token,
-      expiresIn: access.expiresIn,
-      refreshToken: this.refreshTokens.format(session.id, secret),
-      refreshMaxAgeSeconds: secondsUntil(now, session.snapshot.idleExpiresAt),
-    });
+    if (!rotated.ok) {
+      await this.saveIfChanged(session); // persists a reuse revocation
+      return {
+        kind:
+          rotated.error instanceof RefreshConflictError
+            ? 'conflict'
+            : 'invalid',
+      };
+    }
+
+    const org = await this.currentOrg(session);
+    if (!org) session.selectOrganization(null);
+    await this.sessions.save(session);
+    return {
+      kind: 'rotated',
+      session,
+      secret: next.secret,
+      tokenVersion: state.tokenVersion,
+      org,
+    };
   }
 
   /** Still a member, and allowed by the org's MFA policy? Otherwise the session drops the org. */

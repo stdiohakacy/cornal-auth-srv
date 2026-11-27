@@ -6,6 +6,12 @@
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
+  "imports": {
+    "#src/*": {
+      "source": "./src/*",
+      "default": "./dist/*"
+    }
+  },
   "scripts": {
     "build": "nest build",
     "deploy": "nest deploy",

@@ -1,5 +1,5 @@
-import { AccessErrorCode } from '../../../contracts/error-codes.js';
-import { DomainError } from '../../../shared/domain/domain-error.js';
+import { AccessErrorCode } from '#src/contracts/error-codes.js';
+import { DomainError } from '#src/shared/domain/domain-error.js';
 
 /** No org in the token, or a required permission bit is not set. */
 export class AccessForbiddenError extends DomainError<

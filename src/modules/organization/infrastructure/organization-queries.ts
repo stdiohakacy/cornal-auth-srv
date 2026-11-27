@@ -1,5 +1,5 @@
 import type { DataSource } from 'typeorm';
-import { first } from '../../../shared/domain/guard.js';
+import { first } from '#src/shared/domain/guard.js';
 import type { OrganizationReads, RoleView } from '../application/ports.js';
 
 export type MembershipContextRow = {

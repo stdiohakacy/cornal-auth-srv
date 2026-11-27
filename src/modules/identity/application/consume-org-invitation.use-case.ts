@@ -1,5 +1,5 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { ok } from '../../../shared/domain/result.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { ok } from '#src/shared/domain/result.js';
 import type { UserId } from '../domain/user.js';
 import type {
   OneTimeTokenRepository,

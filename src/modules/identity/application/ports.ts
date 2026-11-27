@@ -1,5 +1,5 @@
-import type { Result } from '../../../shared/domain/result.js';
-import type { ServiceBusyError } from '../../../shared/domain/service-busy.error.js';
+import type { Result } from '#src/shared/domain/result.js';
+import type { ServiceBusyError } from '#src/shared/domain/service-busy.error.js';
 import type { Email } from '../domain/email.js';
 import type { User, UserId } from '../domain/user.js';
 
@@ -111,7 +111,12 @@ export type EmailTemplate =
 export type EmailMessage = {
   readonly to: string;
   readonly template: EmailTemplate;
-  readonly data: { readonly link: string; readonly orgName?: string };
+  readonly data: {
+    readonly link: string;
+    readonly orgName?: string;
+    /** Lifetime of the token in `link`, stated in the email. */
+    readonly expiresInMs?: number;
+  };
 };
 
 export const EMAIL_SENDER = Symbol('EMAIL_SENDER');

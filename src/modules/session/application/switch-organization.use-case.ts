@@ -1,18 +1,18 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import type { Session, SessionId } from '../domain/session.js';
 import {
   OrgMfaRequiredError,
   OrgNotMemberError,
   SessionInvalidError,
 } from '../domain/session.errors.js';
+import { issueAccessToken } from './issued-tokens.js';
 import {
   type AccessTokenService,
   type OrgContext,
   orgAllowedFor,
   type OrgContextReader,
   type SessionRepository,
-  toOrgClaims,
 } from './ports.js';
 
 export type SwitchOrganizationError =
@@ -66,13 +66,10 @@ export class SwitchOrganizationUseCase {
     if (!switched.ok) return switched;
 
     const { session, context } = switched.value;
-    const access = await this.accessTokens.issue({
-      sub: input.userId,
-      sid: session.id,
-      uv: input.tokenVersion,
-      amr: session.snapshot.amr,
-      authTime: session.snapshot.authTime,
-      org: toOrgClaims(context),
+    const access = await issueAccessToken(this.accessTokens, {
+      session,
+      tokenVersion: input.tokenVersion,
+      org: context,
     });
     return ok({ accessToken: access.token, expiresIn: access.expiresIn });
   }

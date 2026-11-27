@@ -1,8 +1,8 @@
 import type { DataSource, EntityManager } from 'typeorm';
-import { ConcurrencyConflictError } from '../../../shared/domain/concurrency-conflict.error.js';
-import { first } from '../../../shared/domain/guard.js';
-import { isUniqueViolation } from '../../../shared/infrastructure/persistence/pg-errors.js';
-import type { TransactionContext } from '../../../shared/infrastructure/persistence/transaction-context.js';
+import { ConcurrencyConflictError } from '#src/shared/domain/concurrency-conflict.error.js';
+import { first } from '#src/shared/domain/guard.js';
+import { isUniqueViolation } from '#src/shared/infrastructure/persistence/pg-errors.js';
+import type { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
 import type { OrganizationRepository } from '../application/ports.js';
 import { SlugTakenError } from '../domain/organization.errors.js';
 import {

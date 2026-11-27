@@ -1,5 +1,5 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { ok, type Result } from '../../../shared/domain/result.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { ok, type Result } from '#src/shared/domain/result.js';
 import type { RefreshTokenFactory, SessionRepository } from './ports.js';
 
 /** Idempotent: unknown, expired or forged tokens still answer ok (and change nothing). */

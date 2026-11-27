@@ -1,4 +1,4 @@
-import type { Clock } from '../../../shared/application/ports.js';
+import type { Clock } from '#src/shared/application/ports.js';
 import type { OneTimeTokenRepository, OpenOrgInvite } from './ports.js';
 
 /** Façade for organization: open, unexpired invitations of one org. */

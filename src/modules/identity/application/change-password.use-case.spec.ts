@@ -1,4 +1,4 @@
-import { err } from '../../../shared/domain/result.js';
+import { err } from '#src/shared/domain/result.js';
 import { ChangePasswordUseCase } from './change-password.use-case.js';
 import {
   fakeBreachChecker,
@@ -126,7 +126,7 @@ describe('ChangePasswordUseCase', () => {
   it('busy hasher on verify → ServiceBusyError', async () => {
     const { verify, useCase, user } = setup();
     const { ServiceBusyError } =
-      await import('../../../shared/domain/service-busy.error.js');
+      await import('#src/shared/domain/service-busy.error.js');
     verify.mockResolvedValueOnce(err(new ServiceBusyError(1)));
 
     expect(

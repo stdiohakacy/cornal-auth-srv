@@ -1,5 +1,5 @@
-import { ValueObject } from '../../../shared/domain/value-object.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import { ValueObject } from '#src/shared/domain/value-object.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import { InvalidEmailError } from './identity.errors.js';
 
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
