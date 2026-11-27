@@ -21,14 +21,15 @@ const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
-const plural = (count: number, unit: string): string =>
-  `${count} ${unit}${count === 1 ? '' : 's'}`;
+const DURATION = new Intl.DurationFormat('en', { style: 'long' });
 
 /** Minutes below an hour, hours up to two days, days beyond (24 h reads "24 hours"). */
 function formatDuration(ms: number): string {
-  if (ms < HOUR_MS) return plural(Math.round(ms / MINUTE_MS), 'minute');
-  if (ms <= 2 * DAY_MS) return plural(Math.round(ms / HOUR_MS), 'hour');
-  return plural(Math.round(ms / DAY_MS), 'day');
+  if (ms < HOUR_MS)
+    return DURATION.format({ minutes: Math.round(ms / MINUTE_MS) });
+  if (ms <= 2 * DAY_MS)
+    return DURATION.format({ hours: Math.round(ms / HOUR_MS) });
+  return DURATION.format({ days: Math.round(ms / DAY_MS) });
 }
 
 const expiry = (subject: string, { expiresInMs }: Data): string =>
