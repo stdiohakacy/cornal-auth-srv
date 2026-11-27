@@ -2,6 +2,7 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import { AppConfigModule } from './config/app-config.module.js';
 import type { AppConfig, AppRole } from './config/env.schema.js';
 import { HealthModule } from './health/health.module.js';
+import { IdentityApiModule } from './modules/identity/identity-api.module.js';
 import { IdentityHttpModule } from './modules/identity/identity-http.module.js';
 import { IdentityWorkerModule } from './modules/identity/identity-worker.module.js';
 import {
@@ -9,6 +10,7 @@ import {
   SessionHttpModule,
 } from './modules/session/session-http.module.js';
 import { assertNever } from './shared/domain/guard.js';
+import { SessionWorkerModule } from './modules/session/session-worker.module.js';
 import { ClockModule } from './shared/infrastructure/clock.module.js';
 import { AppMailModule } from './shared/infrastructure/mail/mail.module.js';
 import { LoggingModule } from './shared/infrastructure/logging/logging.module.js';
@@ -26,9 +28,9 @@ function roleModules(role: AppRole) {
     case 'login':
       return [IdentityHttpModule, SessionHttpModule];
     case 'api':
-      return [SessionApiModule];
+      return [SessionApiModule, IdentityApiModule];
     case 'worker':
-      return [IdentityWorkerModule];
+      return [IdentityWorkerModule, SessionWorkerModule];
     default:
       return assertNever(role);
   }

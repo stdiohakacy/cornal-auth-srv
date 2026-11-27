@@ -1,24 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ThrottlingModule } from '../../shared/infrastructure/throttling/throttling.module.js';
-import { AccessTokenGuard } from './presentation/access-token.guard.js';
-import { JwksController } from './presentation/jwks.controller.js';
+import { MeSessionsController } from './presentation/me-sessions.controller.js';
 import { SessionController } from './presentation/session.controller.js';
-import { SessionCoreModule } from './session-core.module.js';
+import { JwksModule, SessionGuardModule } from './session-guard.module.js';
 
 /** `login` role: /auth login, refresh, logout, session + the JWKS. */
 @Module({
-  imports: [SessionCoreModule, ThrottlingModule],
-  controllers: [SessionController, JwksController],
-  providers: [AccessTokenGuard],
-  exports: [AccessTokenGuard, SessionCoreModule],
+  imports: [SessionGuardModule, JwksModule, ThrottlingModule],
+  controllers: [SessionController],
 })
 export class SessionHttpModule {}
 
-/** `api` role: JWKS + AccessTokenGuard for protected /iam routes (Phase 4b+). */
+/** `api` role: the signed-in user's devices + the JWKS. */
 @Module({
-  imports: [SessionCoreModule],
-  controllers: [JwksController],
-  providers: [AccessTokenGuard],
-  exports: [AccessTokenGuard, SessionCoreModule],
+  imports: [SessionGuardModule, JwksModule, ThrottlingModule],
+  controllers: [MeSessionsController],
 })
 export class SessionApiModule {}

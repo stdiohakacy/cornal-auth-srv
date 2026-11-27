@@ -81,6 +81,35 @@ describe('TypeOrmSessionRepository (integration)', () => {
     expect(loaded?.snapshot.prevRefreshHashes).toEqual([hex(1)]);
   });
 
+  it('listActiveByUser excludes revoked and idle-expired sessions, newest activity first', async () => {
+    const owner = await userId();
+    const at = (iso: string) => new Date(iso);
+    const make = (now: Date, idleTtlMs = 14 * 86_400_000) =>
+      Session.start({
+        userId: owner,
+        refreshHash: hex(Math.floor(Math.random() * 1e9)),
+        now,
+        idleTtlMs,
+        absoluteTtlMs: 30 * 86_400_000,
+        amr: ['pwd'],
+        ip: null,
+        userAgent: null,
+      });
+    const older = make(at('2026-11-27T08:00:00Z'));
+    const newer = make(at('2026-11-27T09:00:00Z'));
+    const revoked = make(at('2026-11-27T09:30:00Z'));
+    revoked.revoke('logout', at('2026-11-27T09:31:00Z'));
+    const expired = make(at('2026-11-20T09:00:00Z'), 60_000);
+    for (const s of [older, newer, revoked, expired]) await saveInTx(s);
+
+    const listed = await sessions.listActiveByUser(
+      owner,
+      at('2026-11-27T10:00:00Z'),
+    );
+
+    expect(listed.map((s) => s.id)).toEqual([newer.id, older.id]);
+  });
+
   it('stale version → ConcurrencyConflictError', async () => {
     const session = await start();
     await saveInTx(session);

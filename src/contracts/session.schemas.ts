@@ -29,3 +29,20 @@ export const SessionInfoResponseSchema = z.strictObject({
   amr: z.array(z.string()),
 });
 export type SessionInfoResponse = z.infer<typeof SessionInfoResponseSchema>;
+
+export const SessionIdParamSchema = z.uuid();
+
+export const SessionListResponseSchema = z.strictObject({
+  sessions: z.array(
+    z.strictObject({
+      id: z.string(),
+      current: z.boolean(),
+      createdAt: z.string(),
+      lastActiveAt: z.string(),
+      ip: z.string().nullable(),
+      /** Raw User-Agent; rendering ("Chrome on macOS") is left to the client. */
+      userAgent: z.string().nullable(),
+    }),
+  ),
+});
+export type SessionListResponse = z.infer<typeof SessionListResponseSchema>;

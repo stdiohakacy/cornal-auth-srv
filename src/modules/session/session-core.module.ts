@@ -14,6 +14,7 @@ import { VerifyCredentialsUseCase } from '../identity/application/verify-credent
 import { IdentityCoreModule } from '../identity/identity-core.module.js';
 import type { SessionTtl } from './application/issued-tokens.js';
 import { LoginUseCase } from './application/login.use-case.js';
+import { ListSessionsUseCase } from './application/list-sessions.use-case.js';
 import { LogoutUseCase } from './application/logout.use-case.js';
 import {
   ACCESS_TOKEN_SERVICE,
@@ -28,6 +29,8 @@ import {
   type UserAuthStateReader,
 } from './application/ports.js';
 import { RefreshSessionUseCase } from './application/refresh-session.use-case.js';
+import { RevokeAllSessionsUseCase } from './application/revoke-all-sessions.use-case.js';
+import { RevokeSessionUseCase } from './application/revoke-session.use-case.js';
 import { JoseTokenService } from './infrastructure/jose-token-service.js';
 import {
   KEY_RING,
@@ -162,11 +165,38 @@ const SESSION_TTL = Symbol('SESSION_TTL');
         clock: Clock,
       ) => new LogoutUseCase(sessions, refreshTokens, uow, clock),
     },
+    {
+      provide: ListSessionsUseCase,
+      inject: [SESSION_REPOSITORY, CLOCK],
+      useFactory: (sessions: SessionRepository, clock: Clock) =>
+        new ListSessionsUseCase(sessions, clock),
+    },
+    {
+      provide: RevokeSessionUseCase,
+      inject: [SESSION_REPOSITORY, UNIT_OF_WORK, CLOCK],
+      useFactory: (
+        sessions: SessionRepository,
+        uow: UnitOfWork,
+        clock: Clock,
+      ) => new RevokeSessionUseCase(sessions, uow, clock),
+    },
+    {
+      provide: RevokeAllSessionsUseCase,
+      inject: [SESSION_REPOSITORY, UNIT_OF_WORK, CLOCK],
+      useFactory: (
+        sessions: SessionRepository,
+        uow: UnitOfWork,
+        clock: Clock,
+      ) => new RevokeAllSessionsUseCase(sessions, uow, clock),
+    },
   ],
   exports: [
     LoginUseCase,
     RefreshSessionUseCase,
     LogoutUseCase,
+    ListSessionsUseCase,
+    RevokeSessionUseCase,
+    RevokeAllSessionsUseCase,
     ACCESS_TOKEN_SERVICE,
     KEY_RING,
   ],

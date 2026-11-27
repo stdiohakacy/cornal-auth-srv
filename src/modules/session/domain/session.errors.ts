@@ -20,3 +20,13 @@ export class RefreshConflictError extends DomainError<
     super('Refresh token was just rotated by another request');
   }
 }
+
+/** Unknown, inactive, or someone else's session: indistinguishable on purpose. */
+export class SessionNotFoundError extends DomainError<
+  typeof SessionErrorCode.NotFound
+> {
+  readonly code = SessionErrorCode.NotFound;
+  constructor() {
+    super('Session not found');
+  }
+}

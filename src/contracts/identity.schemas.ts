@@ -37,3 +37,10 @@ export const ResetPasswordRequestSchema = z.strictObject({
   password: z.string().min(1).max(256),
 });
 export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
+
+/** Signed-in password change; the current password is the step-up proof. */
+export const ChangePasswordRequestSchema = z.strictObject({
+  currentPassword: z.string().min(1).max(256),
+  newPassword: z.string().min(1).max(256),
+});
+export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;

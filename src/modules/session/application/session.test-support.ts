@@ -29,6 +29,14 @@ export class InMemorySessionRepository implements SessionRepository {
   async findById(id: SessionId) {
     return this.rows.get(id);
   }
+  async listActiveByUser(userId: string, now: Date) {
+    return [...this.rows.values()]
+      .filter((s) => s.userId === userId && s.isActive(now))
+      .sort(
+        (a, b) =>
+          b.snapshot.lastActiveAt.getTime() - a.snapshot.lastActiveAt.getTime(),
+      );
+  }
   async save(session: Session) {
     if (this.conflictOnNextSave) {
       this.conflictOnNextSave = false;
