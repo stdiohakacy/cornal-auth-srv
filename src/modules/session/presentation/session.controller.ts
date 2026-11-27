@@ -19,6 +19,10 @@ import {
   type SessionInfoResponse,
   type TokenResponse,
 } from '../../../contracts/session.schemas.js';
+import {
+  type SwitchOrganizationRequest,
+  SwitchOrganizationRequestSchema,
+} from '../../../contracts/organization.schemas.js';
 import type { DomainError } from '../../../shared/domain/domain-error.js';
 import { unwrap } from '../../../shared/infrastructure/http/unwrap.js';
 import { AppThrottlerGuard } from '../../../shared/infrastructure/throttling/app-throttler.guard.js';
@@ -28,6 +32,8 @@ import { LoginUseCase } from '../application/login.use-case.js';
 import { LogoutUseCase } from '../application/logout.use-case.js';
 import type { AccessClaims } from '../application/ports.js';
 import { RefreshSessionUseCase } from '../application/refresh-session.use-case.js';
+import { SwitchOrganizationUseCase } from '../application/switch-organization.use-case.js';
+import type { SessionId } from '../domain/session.js';
 import { SessionInvalidError } from '../domain/session.errors.js';
 import { AccessTokenGuard } from './access-token.guard.js';
 import { CurrentAuth } from './current-auth.decorator.js';
@@ -49,6 +55,7 @@ export class SessionController {
     private readonly loginUseCase: LoginUseCase<DomainError>,
     private readonly refreshUseCase: RefreshSessionUseCase,
     private readonly logoutUseCase: LogoutUseCase,
+    private readonly switchUseCase: SwitchOrganizationUseCase,
   ) {}
 
   @Post('login')
@@ -101,6 +108,32 @@ export class SessionController {
     if (refreshToken !== undefined)
       unwrap(await this.logoutUseCase.execute({ refreshToken }));
     res.clearCookie(REFRESH_COOKIE_NAME, READ_REFRESH_COOKIE_OPTIONS);
+  }
+
+  /** Re-scopes this session to another organization: new access token, same refresh family. */
+  @Post('session/organization')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AccessTokenGuard)
+  @Throttle(RATE_LIMITS.refresh)
+  @SkipThrottle({ email: true, ipEmail: true })
+  async switchOrganization(
+    @CurrentAuth() auth: AccessClaims,
+    @Body({ schema: SwitchOrganizationRequestSchema })
+    body: SwitchOrganizationRequest,
+  ): Promise<TokenResponse> {
+    const switched = unwrap(
+      await this.switchUseCase.execute({
+        sessionId: auth.sid as SessionId, // verified token claim
+        userId: auth.sub,
+        orgId: body.orgId,
+        tokenVersion: auth.uv,
+      }),
+    );
+    return {
+      accessToken: switched.accessToken,
+      tokenType: 'Bearer',
+      expiresIn: switched.expiresIn,
+    };
   }
 
   @Get('session')

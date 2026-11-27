@@ -213,6 +213,8 @@ Ref: SD§3.4, SD§4.1, PB§4.3
 
 ## Phase 5 — Organizations, memberships & RBAC
 
+> 5a done — detailed plan: `2026-11-27-phase-5a-orgs-rbac.md` (code catalog synced to DB, orgs + owner membership, org claims `org/mid/mv/ov/pcv/pbits`, login default org = most recently used or the only one, switch org, `PermissionsGuard`, permission-catalog endpoint). 5b pending: invitations, custom-role CRUD, assign/unassign, suspend.
+
 Ref: SD§2, SD§3.2, SD§3.4
 
 - [ ] Domain:

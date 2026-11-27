@@ -34,6 +34,7 @@ import {
 import { NotifyRegistrationAttemptUseCase } from './application/notify-registration-attempt.use-case.js';
 import { ChangePasswordUseCase } from './application/change-password.use-case.js';
 import { GetUserAuthStateUseCase } from './application/get-user-auth-state.use-case.js';
+import { GetUserEmailsUseCase } from './application/get-user-emails.use-case.js';
 import { IssuePasswordResetUseCase } from './application/issue-password-reset.use-case.js';
 import { NotifyPasswordChangedUseCase } from './application/notify-password-changed.use-case.js';
 import { RegisterUserUseCase } from './application/register-user.use-case.js';
@@ -225,6 +226,11 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
         new GetUserAuthStateUseCase(users, clock),
     },
     {
+      provide: GetUserEmailsUseCase,
+      inject: [USER_REPOSITORY],
+      useFactory: (users: UserRepository) => new GetUserEmailsUseCase(users),
+    },
+    {
       provide: ChangePasswordUseCase,
       inject: [
         USER_REPOSITORY,
@@ -340,6 +346,7 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
     NotifyPasswordChangedUseCase,
     GetUserAuthStateUseCase,
     ChangePasswordUseCase,
+    GetUserEmailsUseCase,
   ],
 })
 export class IdentityCoreModule implements OnModuleInit {

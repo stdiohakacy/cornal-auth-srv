@@ -3,6 +3,8 @@ import {
   clockAt,
   fakeAccessTokens,
   FakeCredentials,
+  FakeOrgContexts,
+  ORG_CONTEXT,
   InMemorySessionRepository,
   NOW,
   passthroughUow,
@@ -18,16 +20,18 @@ function setup() {
   });
   const sessions = new InMemorySessionRepository();
   const tokens = fakeAccessTokens();
+  const orgs = new FakeOrgContexts();
   const useCase = new LoginUseCase(
     credentials,
     sessions,
     sequentialRefreshTokens(),
     tokens.service,
+    orgs,
     passthroughUow,
     clockAt(NOW),
     TTL,
   );
-  return { sessions, tokens, useCase };
+  return { sessions, tokens, orgs, useCase };
 }
 
 describe('LoginUseCase', () => {
@@ -79,5 +83,36 @@ describe('LoginUseCase', () => {
       error: { code: 'IDENTITY.INVALID_CREDENTIALS' },
     });
     expect(sessions.rows.size).toBe(0);
+  });
+
+  it('puts the default org (most recent or only membership) into the token and the session', async () => {
+    const { sessions, tokens, orgs, useCase } = setup();
+    orgs.defaults.set('u1', ORG_CONTEXT);
+
+    const result = await useCase.execute({
+      email: 'a@b.co',
+      password: 'pw-correct-horse',
+      ip: null,
+      userAgent: null,
+    });
+
+    expect(result.ok).toBe(true);
+    const { mfaRequired: _ignored, ...claims } = ORG_CONTEXT;
+    expect(tokens.issued[0]?.org).toEqual(claims);
+    expect([...sessions.rows.values()][0]?.snapshot.activeOrgId).toBe('org-1');
+  });
+
+  it('skips a default org that requires MFA when the login used only a password', async () => {
+    const { tokens, orgs, useCase } = setup();
+    orgs.defaults.set('u1', { ...ORG_CONTEXT, mfaRequired: true });
+
+    await useCase.execute({
+      email: 'a@b.co',
+      password: 'pw-correct-horse',
+      ip: null,
+      userAgent: null,
+    });
+
+    expect(tokens.issued[0]?.org).toBeUndefined();
   });
 });

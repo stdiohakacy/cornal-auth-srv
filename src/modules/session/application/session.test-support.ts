@@ -7,6 +7,8 @@ import type {
   AccessClaims,
   AccessTokenService,
   CredentialsVerifier,
+  OrgContext,
+  OrgContextReader,
   RefreshTokenFactory,
   SessionRepository,
   UserAuthStateReader,
@@ -28,6 +30,15 @@ export class InMemorySessionRepository implements SessionRepository {
   conflictOnNextSave = false;
   async findById(id: SessionId) {
     return this.rows.get(id);
+  }
+  async lastActiveOrgOf(userId: string) {
+    const withOrg = [...this.rows.values()]
+      .filter((s) => s.userId === userId && s.snapshot.activeOrgId !== null)
+      .sort(
+        (a, b) =>
+          b.snapshot.lastActiveAt.getTime() - a.snapshot.lastActiveAt.getTime(),
+      );
+    return withOrg[0]?.snapshot.activeOrgId ?? null;
   }
   async listActiveByUser(userId: string, now: Date) {
     return [...this.rows.values()]
@@ -101,5 +112,31 @@ export class FakeAuthState implements UserAuthStateReader {
   >();
   async get(userId: string) {
     return this.states.get(userId);
+  }
+}
+
+/** A member context as the organization façade would return it. */
+export const ORG_CONTEXT: OrgContext = {
+  orgId: 'org-1',
+  membershipId: 'm-1',
+  mv: 1,
+  ov: 0,
+  pcv: 1,
+  pbits: 'AQ',
+  mfaRequired: false,
+};
+
+export class FakeOrgContexts implements OrgContextReader {
+  readonly contexts = new Map<string, OrgContext>();
+  readonly defaults = new Map<string, OrgContext>();
+  async contextFor(userId: string, orgId: string) {
+    return this.contexts.get(`${userId}:${orgId}`);
+  }
+  async defaultFor(userId: string, preferredOrgId: string | null) {
+    const preferred =
+      preferredOrgId === null
+        ? undefined
+        : this.contexts.get(`${userId}:${preferredOrgId}`);
+    return preferred ?? this.defaults.get(userId);
   }
 }

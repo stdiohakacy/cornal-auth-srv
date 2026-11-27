@@ -85,4 +85,26 @@ describe('JoseTokenService', () => {
     expect(await own.verify(`${header}.${body}.`)).toBeUndefined();
     expect(await own.verify('not-a-jwt')).toBeUndefined();
   });
+
+  it('org claims round-trip; absent when there is no active org', async () => {
+    const { service } = await setup();
+    const org = {
+      orgId: 'org-1',
+      membershipId: 'm-1',
+      mv: 2,
+      ov: 1,
+      pcv: 1,
+      pbits: 'Fw',
+    };
+
+    const withOrg = await service.verify(
+      (await service.issue({ ...claims, org })).token,
+    );
+    const withoutOrg = await service.verify(
+      (await service.issue(claims)).token,
+    );
+
+    expect(withOrg?.org).toEqual(org);
+    expect(withoutOrg?.org).toBeUndefined();
+  });
 });

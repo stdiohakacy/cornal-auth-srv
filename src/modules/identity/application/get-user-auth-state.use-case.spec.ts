@@ -19,6 +19,7 @@ describe('GetUserAuthStateUseCase', () => {
     expect(await useCase.execute({ userId: user.id })).toEqual({
       tokenVersion: 0,
       canAuthenticate: true,
+      emailVerified: false,
     });
   });
 
@@ -43,6 +44,7 @@ describe('GetUserAuthStateUseCase', () => {
     expect(await useCase.execute({ userId: disabled.id })).toEqual({
       tokenVersion: 3,
       canAuthenticate: false,
+      emailVerified: false,
     });
   });
 

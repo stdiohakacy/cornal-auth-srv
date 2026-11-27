@@ -38,4 +38,25 @@ export const SessionErrorCode = {
 export type SessionErrorCode =
   (typeof SessionErrorCode)[keyof typeof SessionErrorCode];
 
-export type ErrorCode = CommonErrorCode | IdentityErrorCode | SessionErrorCode;
+export const OrgErrorCode = {
+  InvalidSlug: 'ORG.INVALID_SLUG',
+  SlugTaken: 'ORG.SLUG_TAKEN',
+  NotMember: 'ORG.NOT_MEMBER',
+  MfaRequired: 'ORG.MFA_REQUIRED',
+  EmailNotVerified: 'ORG.EMAIL_NOT_VERIFIED',
+} as const;
+export type OrgErrorCode = (typeof OrgErrorCode)[keyof typeof OrgErrorCode];
+
+export const AccessErrorCode = {
+  Forbidden: 'ACCESS.FORBIDDEN',
+  OrgMismatch: 'ACCESS.ORG_MISMATCH',
+} as const;
+export type AccessErrorCode =
+  (typeof AccessErrorCode)[keyof typeof AccessErrorCode];
+
+export type ErrorCode =
+  | CommonErrorCode
+  | IdentityErrorCode
+  | SessionErrorCode
+  | OrgErrorCode
+  | AccessErrorCode;

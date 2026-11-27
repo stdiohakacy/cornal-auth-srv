@@ -36,6 +36,16 @@ export class InMemoryUserRepository implements UserRepository {
   async findById(id: UserId) {
     return this.rows.get(id);
   }
+  emailsByIds(ids: readonly UserId[]): Promise<ReadonlyMap<UserId, string>> {
+    return Promise.resolve(
+      new Map(
+        ids.flatMap((id) => {
+          const user = this.rows.get(id);
+          return user ? [[id, user.email.value] as const] : [];
+        }),
+      ),
+    );
+  }
   async findByEmail(email: Email) {
     return [...this.rows.values()].find((u) => u.email.equals(email));
   }

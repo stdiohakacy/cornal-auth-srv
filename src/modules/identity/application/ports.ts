@@ -18,6 +18,8 @@ export const USER_REPOSITORY = Symbol('USER_REPOSITORY');
 export interface UserRepository {
   findById(id: UserId): Promise<User | undefined>;
   findByEmail(email: Email): Promise<User | undefined>;
+  /** Batch lookup for listings (one query). Unknown ids are absent from the map. */
+  emailsByIds(ids: readonly UserId[]): Promise<ReadonlyMap<UserId, string>>;
   /**
    * Insert or optimistic update; only events are written for a version bump on existing rows.
    * Throws EmailTakenError on a duplicate email.

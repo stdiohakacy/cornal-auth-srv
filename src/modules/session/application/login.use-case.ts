@@ -7,16 +7,22 @@ import {
   secondsUntil,
   type SessionTtl,
 } from './issued-tokens.js';
-import type {
-  AccessTokenService,
-  CredentialsVerifier,
-  RefreshTokenFactory,
-  SessionRepository,
+import {
+  type AccessTokenService,
+  type CredentialsVerifier,
+  orgAllowedFor,
+  type OrgContextReader,
+  type RefreshTokenFactory,
+  type SessionRepository,
+  toOrgClaims,
 } from './ports.js';
 
+const AMR = ['pwd'] as const;
+
 /**
- * Password login. Credential checks (rate limit already applied, lockout, Argon2 gate, dummy hash)
- * live in identity's façade; this starts a new refresh family and issues the first token pair.
+ * Password login. Credential checks (rate limit, lockout, Argon2 gate, dummy hash) live in
+ * identity's façade; this starts a refresh family scoped to the user's default organization
+ * (most recently used, or the only one) and issues the first token pair.
  */
 export class LoginUseCase<E extends DomainError> {
   constructor(
@@ -24,6 +30,7 @@ export class LoginUseCase<E extends DomainError> {
     private readonly sessions: SessionRepository,
     private readonly refreshTokens: RefreshTokenFactory,
     private readonly accessTokens: AccessTokenService,
+    private readonly orgs: OrgContextReader,
     private readonly uow: UnitOfWork,
     private readonly clock: Clock,
     private readonly ttl: SessionTtl,
@@ -40,18 +47,25 @@ export class LoginUseCase<E extends DomainError> {
       password: input.password,
     });
     if (!verified.ok) return verified;
+    const { userId, tokenVersion } = verified.value;
+
+    const preferred = await this.sessions.lastActiveOrgOf(userId);
+    const candidate = await this.orgs.defaultFor(userId, preferred);
+    const org =
+      candidate && orgAllowedFor(candidate, AMR) ? candidate : undefined;
 
     const now = this.clock.now();
     const { secret, hash } = this.refreshTokens.newSecret();
     const session = Session.start({
-      userId: verified.value.userId,
+      userId,
       refreshHash: hash,
       now,
       idleTtlMs: this.ttl.idleSeconds * 1000,
       absoluteTtlMs: this.ttl.absoluteSeconds * 1000,
-      amr: ['pwd'],
+      amr: AMR,
       ip: input.ip,
       userAgent: input.userAgent,
+      activeOrgId: org?.orgId ?? null,
     });
     await this.uow.run(async () => {
       await this.sessions.save(session);
@@ -59,11 +73,12 @@ export class LoginUseCase<E extends DomainError> {
     });
 
     const access = await this.accessTokens.issue({
-      sub: session.userId,
+      sub: userId,
       sid: session.id,
-      uv: verified.value.tokenVersion,
+      uv: tokenVersion,
       amr: session.snapshot.amr,
       authTime: now,
+      ...(org ? { org: toOrgClaims(org) } : {}),
     });
     return ok({
       accessToken: access.token,

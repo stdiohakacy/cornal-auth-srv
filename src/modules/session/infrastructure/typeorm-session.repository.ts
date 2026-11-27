@@ -25,6 +25,7 @@ type SessionRow = {
   user_agent: string | null;
   created_at: Date;
   last_active_at: Date;
+  active_org_id: string | null;
   version: number;
 };
 
@@ -33,7 +34,7 @@ const SELECT_COLUMNS = `id, user_id, encode(refresh_hash, 'hex') AS refresh_hash
   ARRAY(SELECT encode(h, 'hex') FROM unnest(prev_refresh_hashes) WITH ORDINALITY AS t(h, n) ORDER BY n)
     AS prev_refresh_hashes,
   rotated_at, idle_expires_at, absolute_expires_at, revoked_at, revoke_reason, amr, auth_time,
-  host(ip) AS ip, user_agent, created_at, last_active_at, version`;
+  host(ip) AS ip, user_agent, created_at, last_active_at, active_org_id, version`;
 
 const HEX_ARRAY_TO_BYTEA = (param: string) =>
   `ARRAY(SELECT decode(h, 'hex') FROM unnest(${param}::text[]) WITH ORDINALITY AS t(h, n) ORDER BY n)`;
@@ -52,6 +53,17 @@ export class TypeOrmSessionRepository implements SessionRepository {
     );
     const row = first(rows);
     return row ? toSession(row) : undefined;
+  }
+
+  async lastActiveOrgOf(userId: string): Promise<string | null> {
+    const manager = this.tx.active?.manager ?? this.dataSource.manager;
+    const rows: { active_org_id: string }[] = await manager.query(
+      `SELECT active_org_id FROM sessions
+       WHERE user_id = $1 AND active_org_id IS NOT NULL
+       ORDER BY last_active_at DESC LIMIT 1`,
+      [userId],
+    );
+    return first(rows)?.active_org_id ?? null;
   }
 
   async listActiveByUser(userId: string, now: Date): Promise<Session[]> {
@@ -85,9 +97,9 @@ export class TypeOrmSessionRepository implements SessionRepository {
     await manager.query(
       `INSERT INTO sessions (id, user_id, refresh_hash, prev_refresh_hashes, rotated_at, idle_expires_at,
          absolute_expires_at, revoked_at, revoke_reason, amr, auth_time, ip, user_agent, created_at,
-         last_active_at, version)
+         last_active_at, active_org_id, version)
        VALUES ($1, $2, decode($3, 'hex'), ${HEX_ARRAY_TO_BYTEA('$4')}, $5, $6, $7, $8, $9, $10, $11,
-         $12, $13, $14, $15, 1)`,
+         $12, $13, $14, $15, $16, 1)`,
       [
         session.id,
         s.userId,
@@ -104,6 +116,7 @@ export class TypeOrmSessionRepository implements SessionRepository {
         s.userAgent,
         s.createdAt,
         s.lastActiveAt,
+        s.activeOrgId,
       ],
     );
   }
@@ -117,7 +130,7 @@ export class TypeOrmSessionRepository implements SessionRepository {
     const [, affected]: [unknown, number] = await manager.query(
       `UPDATE sessions SET refresh_hash = decode($3, 'hex'), prev_refresh_hashes = ${HEX_ARRAY_TO_BYTEA('$4')},
          rotated_at = $5, idle_expires_at = $6, revoked_at = $7, revoke_reason = $8, ip = $9,
-         user_agent = $10, last_active_at = $11, version = version + 1
+         user_agent = $10, last_active_at = $11, active_org_id = $12, version = version + 1
        WHERE id = $1 AND version = $2`,
       [
         session.id,
@@ -131,6 +144,7 @@ export class TypeOrmSessionRepository implements SessionRepository {
         s.ip,
         s.userAgent,
         s.lastActiveAt,
+        s.activeOrgId,
       ],
     );
     if (affected !== 1)
@@ -156,6 +170,7 @@ function toSession(row: SessionRow): Session {
       userAgent: row.user_agent,
       createdAt: row.created_at,
       lastActiveAt: row.last_active_at,
+      activeOrgId: row.active_org_id,
     },
     row.version,
   );

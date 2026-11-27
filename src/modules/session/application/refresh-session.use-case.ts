@@ -1,6 +1,6 @@
 import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
 import { ConcurrencyConflictError } from '../../../shared/domain/concurrency-conflict.error.js';
+import { err, ok, type Result } from '../../../shared/domain/result.js';
 import type { Session } from '../domain/session.js';
 import {
   RefreshConflictError,
@@ -11,11 +11,15 @@ import {
   secondsUntil,
   type SessionTtl,
 } from './issued-tokens.js';
-import type {
-  AccessTokenService,
-  RefreshTokenFactory,
-  SessionRepository,
-  UserAuthStateReader,
+import {
+  type AccessTokenService,
+  type OrgContext,
+  orgAllowedFor,
+  type OrgContextReader,
+  type RefreshTokenFactory,
+  type SessionRepository,
+  toOrgClaims,
+  type UserAuthStateReader,
 } from './ports.js';
 
 type Outcome =
@@ -24,13 +28,15 @@ type Outcome =
       readonly session: Session;
       readonly secret: string;
       readonly tokenVersion: number;
+      readonly org: OrgContext | undefined;
     }
   | { readonly kind: 'invalid' }
   | { readonly kind: 'conflict' };
 
 /**
- * Refresh-token rotation. Revocations (reuse detected, user no longer allowed) are COMMITTED: the
- * transaction returns ok and the error is produced afterwards — an err() would roll them back.
+ * Refresh-token rotation. Also recomputes the organization context, so role changes reach the
+ * token within one refresh. Revocations (reuse detected, user no longer allowed) are COMMITTED:
+ * the transaction returns ok and the error is produced afterwards — an err() would roll them back.
  */
 export class RefreshSessionUseCase {
   constructor(
@@ -38,6 +44,7 @@ export class RefreshSessionUseCase {
     private readonly sessions: SessionRepository,
     private readonly refreshTokens: RefreshTokenFactory,
     private readonly accessTokens: AccessTokenService,
+    private readonly orgs: OrgContextReader,
     private readonly uow: UnitOfWork,
     private readonly clock: Clock,
     private readonly ttl: SessionTtl,
@@ -86,12 +93,16 @@ export class RefreshSessionUseCase {
                   : 'invalid',
             });
           }
+
+          const org = await this.currentOrg(session);
+          if (!org) session.selectOrganization(null);
           await this.sessions.save(session);
           return ok({
             kind: 'rotated',
             session,
             secret: next.secret,
             tokenVersion: state.tokenVersion,
+            org,
           });
         },
       );
@@ -106,13 +117,14 @@ export class RefreshSessionUseCase {
     if (outcome.kind === 'conflict') return err(new RefreshConflictError());
     if (outcome.kind === 'invalid') return err(new SessionInvalidError());
 
-    const { session, secret, tokenVersion } = outcome;
+    const { session, secret, tokenVersion, org } = outcome;
     const access = await this.accessTokens.issue({
       sub: session.userId,
       sid: session.id,
       uv: tokenVersion,
       amr: session.snapshot.amr,
       authTime: session.snapshot.authTime,
+      ...(org ? { org: toOrgClaims(org) } : {}),
     });
     return ok({
       accessToken: access.token,
@@ -120,6 +132,16 @@ export class RefreshSessionUseCase {
       refreshToken: this.refreshTokens.format(session.id, secret),
       refreshMaxAgeSeconds: secondsUntil(now, session.snapshot.idleExpiresAt),
     });
+  }
+
+  /** Still a member, and allowed by the org's MFA policy? Otherwise the session drops the org. */
+  private async currentOrg(session: Session): Promise<OrgContext | undefined> {
+    const orgId = session.snapshot.activeOrgId;
+    if (orgId === null) return undefined;
+    const context = await this.orgs.contextFor(session.userId, orgId);
+    return context && orgAllowedFor(context, session.snapshot.amr)
+      ? context
+      : undefined;
   }
 
   /** Domain operations that change state also raise events; nothing raised ⇒ nothing to write. */

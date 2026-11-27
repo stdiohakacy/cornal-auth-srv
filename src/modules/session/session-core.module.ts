@@ -12,6 +12,8 @@ import { TransactionContext } from '../../shared/infrastructure/persistence/tran
 import { GetUserAuthStateUseCase } from '../identity/application/get-user-auth-state.use-case.js';
 import { VerifyCredentialsUseCase } from '../identity/application/verify-credentials.use-case.js';
 import { IdentityCoreModule } from '../identity/identity-core.module.js';
+import { ResolveOrgContextUseCase } from '../organization/application/resolve-org-context.use-case.js';
+import { OrganizationCoreModule } from '../organization/organization-core.module.js';
 import type { SessionTtl } from './application/issued-tokens.js';
 import { LoginUseCase } from './application/login.use-case.js';
 import { ListSessionsUseCase } from './application/list-sessions.use-case.js';
@@ -20,6 +22,8 @@ import {
   ACCESS_TOKEN_SERVICE,
   type AccessTokenService,
   CREDENTIALS_VERIFIER,
+  ORG_CONTEXT_READER,
+  type OrgContextReader,
   type CredentialsVerifier,
   REFRESH_TOKEN_FACTORY,
   type RefreshTokenFactory,
@@ -31,6 +35,7 @@ import {
 import { RefreshSessionUseCase } from './application/refresh-session.use-case.js';
 import { RevokeAllSessionsUseCase } from './application/revoke-all-sessions.use-case.js';
 import { RevokeSessionUseCase } from './application/revoke-session.use-case.js';
+import { SwitchOrganizationUseCase } from './application/switch-organization.use-case.js';
 import { JoseTokenService } from './infrastructure/jose-token-service.js';
 import {
   KEY_RING,
@@ -47,7 +52,7 @@ const SESSION_TTL = Symbol('SESSION_TTL');
  * (VerifyCredentialsUseCase, GetUserAuthStateUseCase), adapted here to session's own ports.
  */
 @Module({
-  imports: [IdentityCoreModule],
+  imports: [IdentityCoreModule, OrganizationCoreModule],
   providers: [
     keyRingProvider,
     {
@@ -96,12 +101,40 @@ const SESSION_TTL = Symbol('SESSION_TTL');
       }),
     },
     {
+      provide: ORG_CONTEXT_READER,
+      inject: [ResolveOrgContextUseCase],
+      useFactory: (resolve: ResolveOrgContextUseCase): OrgContextReader => ({
+        contextFor: (userId, orgId) => resolve.contextFor(userId, orgId),
+        defaultFor: (userId, preferredOrgId) =>
+          resolve.defaultFor(userId, preferredOrgId),
+      }),
+    },
+    {
+      provide: SwitchOrganizationUseCase,
+      inject: [
+        SESSION_REPOSITORY,
+        ORG_CONTEXT_READER,
+        ACCESS_TOKEN_SERVICE,
+        UNIT_OF_WORK,
+        CLOCK,
+      ],
+      useFactory: (
+        sessions: SessionRepository,
+        orgs: OrgContextReader,
+        accessTokens: AccessTokenService,
+        uow: UnitOfWork,
+        clock: Clock,
+      ) =>
+        new SwitchOrganizationUseCase(sessions, orgs, accessTokens, uow, clock),
+    },
+    {
       provide: LoginUseCase,
       inject: [
         CREDENTIALS_VERIFIER,
         SESSION_REPOSITORY,
         REFRESH_TOKEN_FACTORY,
         ACCESS_TOKEN_SERVICE,
+        ORG_CONTEXT_READER,
         UNIT_OF_WORK,
         CLOCK,
         SESSION_TTL,
@@ -111,6 +144,7 @@ const SESSION_TTL = Symbol('SESSION_TTL');
         sessions: SessionRepository,
         refreshTokens: RefreshTokenFactory,
         accessTokens: AccessTokenService,
+        orgs: OrgContextReader,
         uow: UnitOfWork,
         clock: Clock,
         ttl: SessionTtl,
@@ -120,6 +154,7 @@ const SESSION_TTL = Symbol('SESSION_TTL');
           sessions,
           refreshTokens,
           accessTokens,
+          orgs,
           uow,
           clock,
           ttl,
@@ -132,6 +167,7 @@ const SESSION_TTL = Symbol('SESSION_TTL');
         SESSION_REPOSITORY,
         REFRESH_TOKEN_FACTORY,
         ACCESS_TOKEN_SERVICE,
+        ORG_CONTEXT_READER,
         UNIT_OF_WORK,
         CLOCK,
         SESSION_TTL,
@@ -141,6 +177,7 @@ const SESSION_TTL = Symbol('SESSION_TTL');
         sessions: SessionRepository,
         refreshTokens: RefreshTokenFactory,
         accessTokens: AccessTokenService,
+        orgs: OrgContextReader,
         uow: UnitOfWork,
         clock: Clock,
         ttl: SessionTtl,
@@ -150,6 +187,7 @@ const SESSION_TTL = Symbol('SESSION_TTL');
           sessions,
           refreshTokens,
           accessTokens,
+          orgs,
           uow,
           clock,
           ttl,
@@ -191,6 +229,7 @@ const SESSION_TTL = Symbol('SESSION_TTL');
     },
   ],
   exports: [
+    SwitchOrganizationUseCase,
     LoginUseCase,
     RefreshSessionUseCase,
     LogoutUseCase,
