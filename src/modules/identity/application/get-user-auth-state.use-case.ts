@@ -5,6 +5,7 @@ import type { UserRepository } from './ports.js';
 export type UserAuthState = {
   readonly tokenVersion: number;
   readonly canAuthenticate: boolean;
+  readonly emailVerified: boolean;
 };
 
 /** Façade for the session module: may this user keep a session, and which token version is current? */
@@ -20,6 +21,7 @@ export class GetUserAuthStateUseCase {
     return {
       tokenVersion: user.tokenVersion,
       canAuthenticate: user.ensureCanAttemptLogin(this.clock.now()).ok,
+      emailVerified: user.emailVerifiedAt !== null,
     };
   }
 }

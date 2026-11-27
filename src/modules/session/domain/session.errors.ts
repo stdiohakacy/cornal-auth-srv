@@ -1,4 +1,7 @@
-import { SessionErrorCode } from '../../../contracts/error-codes.js';
+import {
+  OrgErrorCode,
+  SessionErrorCode,
+} from '../../../contracts/error-codes.js';
 import { DomainError } from '../../../shared/domain/domain-error.js';
 
 /** Unknown, expired, revoked or reused credentials. One message for all: reveal nothing. */
@@ -28,5 +31,25 @@ export class SessionNotFoundError extends DomainError<
   readonly code = SessionErrorCode.NotFound;
   constructor() {
     super('Session not found');
+  }
+}
+
+/** Switching to an organization the user is not an active member of. */
+export class OrgNotMemberError extends DomainError<
+  typeof OrgErrorCode.NotMember
+> {
+  readonly code = OrgErrorCode.NotMember;
+  constructor() {
+    super('You are not an active member of this organization');
+  }
+}
+
+/** The organization requires MFA and this session did not use a second factor. */
+export class OrgMfaRequiredError extends DomainError<
+  typeof OrgErrorCode.MfaRequired
+> {
+  readonly code = OrgErrorCode.MfaRequired;
+  constructor() {
+    super('This organization requires multi-factor authentication');
   }
 }

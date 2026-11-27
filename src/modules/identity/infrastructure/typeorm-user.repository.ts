@@ -24,6 +24,18 @@ export class TypeOrmUserRepository implements UserRepository {
     return this.findOne('u.email = $1', email.value);
   }
 
+  async emailsByIds(
+    ids: readonly UserId[],
+  ): Promise<ReadonlyMap<UserId, string>> {
+    if (ids.length === 0) return new Map();
+    const manager = this.tx.active?.manager ?? this.dataSource.manager;
+    const rows: { id: string; email: string }[] = await manager.query(
+      `SELECT id, email FROM users WHERE id = ANY($1::uuid[]) AND status <> 'deleted'`,
+      [ids],
+    );
+    return new Map(rows.map((row) => [row.id as UserId, row.email]));
+  }
+
   async save(user: User): Promise<void> {
     const manager = this.tx.requireManager();
     if (user.version === 0) {

@@ -4,6 +4,8 @@ import {
   clockAt,
   fakeAccessTokens,
   FakeAuthState,
+  FakeOrgContexts,
+  ORG_CONTEXT,
   InMemorySessionRepository,
   NOW,
   passthroughUow,
@@ -18,6 +20,7 @@ async function setup(at = LATER) {
   const authState = new FakeAuthState();
   authState.states.set('u1', { tokenVersion: 2, canAuthenticate: true });
   const tokens = fakeAccessTokens();
+  const orgs = new FakeOrgContexts();
   const session = Session.start({
     userId: 'u1',
     refreshHash: 'hash:original',
@@ -34,6 +37,7 @@ async function setup(at = LATER) {
     sessions,
     sequentialRefreshTokens(),
     tokens.service,
+    orgs,
     passthroughUow,
     clockAt(at),
     TTL,
@@ -44,7 +48,7 @@ async function setup(at = LATER) {
       ip: '5.6.7.8',
       userAgent: 'ua-2',
     });
-  return { sessions, authState, tokens, session, useCase, refresh };
+  return { sessions, authState, tokens, orgs, session, useCase, refresh };
 }
 
 describe('RefreshSessionUseCase', () => {
@@ -73,6 +77,7 @@ describe('RefreshSessionUseCase', () => {
       sessions,
       sequentialRefreshTokens(),
       fakeAccessTokens().service,
+      new FakeOrgContexts(),
       passthroughUow,
       clockAt(new Date(LATER.getTime() + 60_000)),
       TTL,
@@ -134,5 +139,29 @@ describe('RefreshSessionUseCase', () => {
         userAgent: null,
       }),
     ).toMatchObject({ ok: false, error: { code: 'SESSION.INVALID' } });
+  });
+
+  it('recomputes the org context (new pbits) on every refresh', async () => {
+    const { session, tokens, orgs, refresh } = await setup();
+    session.selectOrganization('org-1');
+    orgs.contexts.set('u1:org-1', { ...ORG_CONTEXT, pbits: 'NEW', mv: 9 });
+
+    await refresh('original');
+
+    expect(tokens.issued.at(-1)?.org).toMatchObject({
+      orgId: 'org-1',
+      pbits: 'NEW',
+      mv: 9,
+    });
+  });
+
+  it('drops an org the user no longer belongs to', async () => {
+    const { session, tokens, refresh } = await setup();
+    session.selectOrganization('org-gone');
+
+    await refresh('original');
+
+    expect(tokens.issued.at(-1)?.org).toBeUndefined();
+    expect(session.snapshot.activeOrgId).toBeNull();
   });
 });

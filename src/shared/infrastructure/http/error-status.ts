@@ -26,6 +26,13 @@ export const ERROR_STATUS = {
   'SESSION.INVALID': HttpStatus.UNAUTHORIZED,
   'SESSION.REFRESH_CONFLICT': HttpStatus.CONFLICT,
   'SESSION.NOT_FOUND': HttpStatus.NOT_FOUND,
+  'ORG.INVALID_SLUG': HttpStatus.UNPROCESSABLE_ENTITY,
+  'ORG.SLUG_TAKEN': HttpStatus.CONFLICT,
+  'ORG.NOT_MEMBER': HttpStatus.FORBIDDEN,
+  'ORG.MFA_REQUIRED': HttpStatus.FORBIDDEN,
+  'ORG.EMAIL_NOT_VERIFIED': HttpStatus.FORBIDDEN,
+  'ACCESS.FORBIDDEN': HttpStatus.FORBIDDEN,
+  'ACCESS.ORG_MISMATCH': HttpStatus.FORBIDDEN,
 } as const satisfies Record<ErrorCode, HttpStatus>;
 
 export const isErrorCode = (code: string): code is ErrorCode =>

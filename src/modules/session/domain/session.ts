@@ -33,6 +33,8 @@ export type SessionProps = {
   userAgent: string | null;
   createdAt: Date;
   lastActiveAt: Date;
+  /** Organization the access tokens of this session are scoped to (null = none selected). */
+  activeOrgId: string | null;
 };
 
 const MAX_PREVIOUS_HASHES = 5;
@@ -60,6 +62,7 @@ export class Session extends AggregateRoot<
     amr: readonly string[];
     ip: string | null;
     userAgent: string | null;
+    activeOrgId?: string | null;
   }): Session {
     const absoluteExpiresAt = new Date(
       input.now.getTime() + input.absoluteTtlMs,
@@ -84,6 +87,7 @@ export class Session extends AggregateRoot<
         userAgent: input.userAgent,
         createdAt: input.now,
         lastActiveAt: input.now,
+        activeOrgId: input.activeOrgId ?? null,
       },
       0,
     );
@@ -113,6 +117,11 @@ export class Session extends AggregateRoot<
 
   get snapshot(): Readonly<SessionProps> {
     return this.props;
+  }
+
+  /** Membership checks happen in the use case; the session only remembers the choice. */
+  selectOrganization(orgId: string | null): void {
+    this.props.activeOrgId = orgId;
   }
 
   /** True only for the current refresh secret (logout must not accept a stale or forged one). */

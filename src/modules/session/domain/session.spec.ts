@@ -146,4 +146,13 @@ describe('Session', () => {
       'session.revoked',
     ]);
   });
+
+  it('remembers the selected organization (null clears it)', () => {
+    const session = started();
+
+    session.selectOrganization('org-1');
+    expect(session.snapshot.activeOrgId).toBe('org-1');
+    session.selectOrganization(null);
+    expect(session.snapshot.activeOrgId).toBeNull();
+  });
 });
