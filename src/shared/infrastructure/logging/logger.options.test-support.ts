@@ -1,23 +1,6 @@
 import type { AppConfig } from '../../../config/env.schema.js';
+import { buildTestConfig } from '../../../config/test-config.test-support.js';
 
 export function testConfigFor(level: AppConfig['LOG_LEVEL']): AppConfig {
-  return Object.freeze({
-    NODE_ENV: 'test',
-    APP_ROLE: 'api',
-    PORT: 3001,
-    LOG_LEVEL: level,
-    TRUST_PROXY: 'loopback',
-    DATABASE_URL: 'postgres://u:p@localhost:6432/db',
-    DATABASE_DIRECT_URL: 'postgres://u:p@localhost:5432/db',
-    DB_POOL_MAX: 5,
-    OUTBOX_RELAY_ENABLED: true,
-    REDIS_URL: 'redis://localhost:6379',
-    NATS_URL: 'nats://localhost:4222',
-    EMAIL_VERIFICATION_URL: 'http://localhost:3000/verify-email',
-    APP_LOGIN_URL: 'http://localhost:3000/login',
-    PASSWORD_RESET_URL: 'http://localhost:3000/reset-password',
-    EMAIL_TRANSPORT: 'log',
-    PASSWORD_BREACH_CHECK: false,
-    EMAIL_FROM: 'Cornal <no-reply@cornal.local>',
-  });
+  return buildTestConfig({ LOG_LEVEL: level, APP_ROLE: 'api', PORT: 3001 });
 }

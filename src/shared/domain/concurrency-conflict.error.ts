@@ -1,5 +1,5 @@
-import { CommonErrorCode } from '../../../contracts/error-codes.js';
-import { DomainError } from '../../domain/domain-error.js';
+import { CommonErrorCode } from '../../contracts/error-codes.js';
+import { DomainError } from './domain-error.js';
 
 /**
  * Optimistic-lock failure: the aggregate changed since it was loaded. Thrown by repositories

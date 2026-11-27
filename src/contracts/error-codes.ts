@@ -30,4 +30,11 @@ export const IdentityErrorCode = {
 export type IdentityErrorCode =
   (typeof IdentityErrorCode)[keyof typeof IdentityErrorCode];
 
-export type ErrorCode = CommonErrorCode | IdentityErrorCode;
+export const SessionErrorCode = {
+  Invalid: 'SESSION.INVALID',
+  RefreshConflict: 'SESSION.REFRESH_CONFLICT',
+} as const;
+export type SessionErrorCode =
+  (typeof SessionErrorCode)[keyof typeof SessionErrorCode];
+
+export type ErrorCode = CommonErrorCode | IdentityErrorCode | SessionErrorCode;

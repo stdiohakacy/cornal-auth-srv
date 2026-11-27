@@ -23,7 +23,8 @@
     "test:int": "vitest run --project integration --passWithNoTests",
     "test:all": "vitest run",
     "db:migrate": "node dist/database/migrate.js",
-    "db:revert": "node dist/database/migrate.js --revert"
+    "db:revert": "node dist/database/migrate.js --revert",
+    "keys:generate": "node scripts/generate-signing-key.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -36,6 +37,7 @@
     "@nestjs/typeorm": "12.0.3",
     "helmet": "8.3.0",
     "ioredis": "6.0.0",
+    "jose": "6.2.17",
     "nestjs-pino": "5.3.1",
     "pg": "8.23.1",
     "pino": "10.4.0",

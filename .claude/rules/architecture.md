@@ -13,7 +13,7 @@ Sources: `../CORNAL_AUTH_ARCHITECTURE_PLAYBOOK.md`, `../CORNAL_AUTH_SYSTEM_DESIG
 - application/: use cases + ports. NO @nestjs/*, NO typeorm. Wired in <m>.module.ts via useFactory + Symbol tokens.
 - infrastructure/: TypeORM records, mappers, repositories, crypto/jose/Redis adapters. Only layer that touches I/O.
 - presentation/: controllers/guards. Call use cases only; never repositories or aggregates.
-- Cross-module: import another module's application/ports.ts façade only, or consume its outbox topic. NEVER forwardRef.
+- Cross-module: depend on another module's exported use case (façade) adapted to your own port in <m>-core.module.ts, or consume its outbox topic. Never read another module's tables. NEVER forwardRef.
 
 ## ESM & TypeScript
 - Relative imports end in .js. No barrel index.ts. No require(), no __dirname (use import.meta.dirname).
@@ -39,7 +39,9 @@ Sources: `../CORNAL_AUTH_ARCHITECTURE_PLAYBOOK.md`, `../CORNAL_AUTH_SYSTEM_DESIG
 
 ## Auth specifics
 - Passwords: node:crypto argon2id (m=19456, t=2, p=1) via PasswordHasher port. Never log, never return hashes.
-- Access JWT ES256 via jose, TTL 600s, unique jti, claims incl. uv/mv/ov/pcv/pbits. Refresh = opaque, sha256 stored, rotate + reuse detection.
+- Access JWT ES256 via jose (typ at+jwt, kid), TTL 600s, unique jti, claims sub/sid/uv/amr/auth_time (+ org claims in Phase 5). Refresh = opaque `<sid>.<secret>`, sha256 stored, rotate + reuse detection.
+- Refresh cookie `cornal_rt` HttpOnly/Secure/SameSite=Strict/Path=/auth (set and clear with the same attributes); mobile uses `X-Client-Type: mobile` + body.
+- Errors repositories throw and use cases catch (e.g. ConcurrencyConflictError) live in shared/domain, never in infrastructure.
 - Revocation is version-based (user/session/membership/org), never timestamp-based.
 - Same error for unknown email and wrong password. Lockout lives in the User aggregate.
 - Every org-scoped route checks token `org` === route `:orgId`.

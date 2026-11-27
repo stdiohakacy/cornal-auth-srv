@@ -19,6 +19,8 @@ const LOCK_DURATION_MS = 15 * 60_000;
 export type VerifiedCredentials = {
   readonly userId: UserId;
   readonly emailVerified: boolean;
+  /** Copied into access tokens (`uv`) so a bump revokes every token of the user. */
+  readonly tokenVersion: number;
 };
 export type VerifyCredentialsError =
   InvalidCredentialsError | AccountLockedError | ServiceBusyError;
@@ -76,6 +78,7 @@ export class VerifyCredentialsUseCase {
     return ok({
       userId: user.id,
       emailVerified: user.emailVerifiedAt !== null,
+      tokenVersion: user.tokenVersion,
     });
   }
 

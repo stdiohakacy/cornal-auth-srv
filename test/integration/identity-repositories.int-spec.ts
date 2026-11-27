@@ -11,7 +11,7 @@ import {
   type UnitOfWork,
 } from '../../src/shared/application/ports.js';
 import { ok } from '../../src/shared/domain/result.js';
-import { ConcurrencyConflictError } from '../../src/shared/infrastructure/persistence/concurrency-conflict.error.js';
+import { ConcurrencyConflictError } from '../../src/shared/domain/concurrency-conflict.error.js';
 import { TransactionContext } from '../../src/shared/infrastructure/persistence/transaction-context.js';
 import { createPersistenceApp } from './support/persistence-app.js';
 
