@@ -25,6 +25,7 @@ export const IdentityErrorCode = {
   InvalidCredentials: 'IDENTITY.INVALID_CREDENTIALS',
   AccountLocked: 'IDENTITY.ACCOUNT_LOCKED',
   InvalidToken: 'IDENTITY.INVALID_TOKEN',
+  PasswordBreached: 'IDENTITY.PASSWORD_BREACHED',
 } as const;
 export type IdentityErrorCode =
   (typeof IdentityErrorCode)[keyof typeof IdentityErrorCode];

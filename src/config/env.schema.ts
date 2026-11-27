@@ -44,14 +44,24 @@ export const EnvSchema = z
       .default('http://localhost:3000/verify-email'),
     /** Frontend login page, linked from the "account already exists" email. */
     APP_LOGIN_URL: z.url().default('http://localhost:3000/login'),
+    /** Frontend page that receives `?token=` from the password-reset email. */
+    PASSWORD_RESET_URL: z.url().default('http://localhost:3000/reset-password'),
     /** `log` prints emails (with their secret links) to the log: development only. */
-    EMAIL_TRANSPORT: z.enum(['log']).default('log'),
+    EMAIL_TRANSPORT: z.enum(['log', 'smtp']).default('log'),
+    /** e.g. smtps://user:pass@smtp.provider.com:465 or smtp://localhost:1025 (Mailpit). */
+    SMTP_URL: z.url().optional(),
+    EMAIL_FROM: z.string().min(3).default('Cornal <no-reply@cornal.local>'),
     /** Concurrent Argon2 jobs per pod; defaults to the number of CPUs. */
     HASH_MAX_CONCURRENCY: z.coerce.number().int().min(1).max(256).optional(),
     /** Read by libuv at process start (Argon2 runs on its threadpool). Declared here so the gate can match it. */
     UV_THREADPOOL_SIZE: z.coerce.number().int().min(1).max(1024).optional(),
     /** Optional server-side secret mixed into Argon2 (from a secret manager in production). */
     PASSWORD_PEPPER: z.string().min(32).optional(),
+    /** Screen new passwords against HIBP (k-anonymity). Disable where outbound HTTP is not allowed. */
+    PASSWORD_BREACH_CHECK: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && env.EMAIL_TRANSPORT === 'log') {
@@ -60,6 +70,13 @@ export const EnvSchema = z
         path: ['EMAIL_TRANSPORT'],
         message:
           'The log transport writes secret links to logs; configure a real provider in production',
+      });
+    }
+    if (env.EMAIL_TRANSPORT === 'smtp' && env.SMTP_URL === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMTP_URL'],
+        message: 'SMTP_URL is required when EMAIL_TRANSPORT=smtp',
       });
     }
   });

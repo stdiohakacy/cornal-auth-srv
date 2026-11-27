@@ -31,6 +31,8 @@ Sources: `../CORNAL_AUTH_ARCHITECTURE_PLAYBOOK.md`, `../CORNAL_AUTH_SYSTEM_DESIG
 ## Persistence & transactions
 - Every write inside uow.run(); returning err() rolls back. Repositories: optimistic UPDATE ... WHERE version, then markPersisted() + track().
 - Side effects after commit only via @nestjs/outbox (stable consumer names; processInTransaction for DB writes).
+- An event reaches the outbox only if its topic is registered in OutboxTopics (module onModuleInit). Adding a consumer = register its topic; unhandled keyed messages block their aggregate's queue.
+- Raw secrets (tokens, codes) never enter the outbox: emit an event, let the worker mint the secret and send it.
 - Slow work (Argon2, HTTP calls) outside uow.run(). Login order: rate limit → HashAdmissionGate → Argon2 → short tx.
 - Migrations only; synchronize: false. Explicit column types. Relation<T> for circular relations.
 - Runtime DB traffic via PgBouncer (DATABASE_URL); no session-level features (LISTEN, SET, advisory locks) through it.

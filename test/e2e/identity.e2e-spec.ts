@@ -84,7 +84,7 @@ describe('identity (e2e)', () => {
     expect(res.status).toBe(202);
     expect(res.body).toEqual(ACCEPTED);
     expect(await usersWithEmail(email)).toHaveLength(1);
-    expect(sent).toEqual([
+    expect(sent.filter((m) => m.to === email)).toEqual([
       {
         to: email,
         template: 'account-exists',

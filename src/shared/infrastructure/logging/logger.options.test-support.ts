@@ -15,6 +15,9 @@ export function testConfigFor(level: AppConfig['LOG_LEVEL']): AppConfig {
     NATS_URL: 'nats://localhost:4222',
     EMAIL_VERIFICATION_URL: 'http://localhost:3000/verify-email',
     APP_LOGIN_URL: 'http://localhost:3000/login',
+    PASSWORD_RESET_URL: 'http://localhost:3000/reset-password',
     EMAIL_TRANSPORT: 'log',
+    PASSWORD_BREACH_CHECK: false,
+    EMAIL_FROM: 'Cornal <no-reply@cornal.local>',
   });
 }

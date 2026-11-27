@@ -151,9 +151,9 @@ Ref: PB§3, SD§2
 - Nested `run` → a single transaction.
 - Two concurrent updates on the same version → one `ConcurrencyConflict`.
 
-## Phase 3 — Identity: register, verify email, password login, reset (3a ✅, 3b pending)
+## Phase 3 — Identity: register, verify email, password login, reset ✅
 
-> 3a done — detailed plan: `2026-11-26-phase-3a-identity.md`. 3b: password reset/change, HIBP, real email provider.
+> Done — plans: `2026-11-26-phase-3a-identity.md`, `2026-11-26-phase-3b-password-email.md`. "Change password while logged in" moved to Phase 4 (needs AccessTokenGuard + step-up).
 
 Ref: SD§3.3, SD§3.5, PB§2.4–2.5
 
@@ -170,7 +170,6 @@ Ref: SD§3.3, SD§3.5, PB§2.4–2.5
   - `RegisterUser` (+ `one_time_tokens(email_verify)` + event) and `VerifyEmail` (atomic consume).
   - `VerifyCredentials` (exported façade for the session module; follow the SD§3.3 order).
   - `RequestPasswordReset` (always returns 202) and `ResetPassword` (revoke all + bump `token_version`).
-  - `ChangePassword` (step-up).
 - [ ] HIBP k-anonymity check (fail-open, 1s timeout) when registering or changing a password.
 - [ ] Email sender port + an outbox consumer `email-sender` (log adapter in dev).
 - [ ] Controller `/auth/register`, `/auth/verify-email`, `/auth/password/forgot`, `/auth/password/reset`, with Zod schemas in `contracts/`.
@@ -202,6 +201,8 @@ Ref: SD§3.4, SD§4.1, PB§4.3
 - [ ] Refresh cookie: `HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh`. Mobile clients send the refresh token in the body.
 - [ ] `AccessTokenGuard` (global, `@Public()` to opt out): verify with the local key and put the actor into `RequestContext`. Revocation check is a placeholder until P6.
 - [ ] Controllers `/auth/login`, `/auth/refresh`, `/auth/logout`, `/iam/me/sessions` (GET, DELETE one, DELETE all).
+- [ ] `ChangePassword` (moved from Phase 3): authenticated + step-up, reuses `User` password change → `identity.user.password_changed { reason: 'change' }`.
+- [ ] Session revocation consumer for `identity.user.password_changed` (revoke all sessions of the user).
 
 **Done when:**
 - Every case in Review Focus #1 and #2 has a test.

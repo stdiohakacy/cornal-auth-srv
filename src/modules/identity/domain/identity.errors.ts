@@ -57,3 +57,13 @@ export class InvalidTokenError extends DomainError<
     super('Token is invalid or expired');
   }
 }
+
+/** The password appears in known breach corpora (HIBP): refuse it, whatever its length. */
+export class PasswordBreachedError extends DomainError<
+  typeof IdentityErrorCode.PasswordBreached
+> {
+  readonly code = IdentityErrorCode.PasswordBreached;
+  constructor() {
+    super('This password has appeared in a data breach; choose another one');
+  }
+}

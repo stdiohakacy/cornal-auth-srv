@@ -34,6 +34,22 @@ export class TypeOrmOneTimeTokenRepository implements OneTimeTokenRepository {
     );
   }
 
+  async findValid(
+    purpose: TokenPurpose,
+    tokenHash: string,
+    now: Date,
+  ): Promise<{ userId: UserId } | undefined> {
+    const manager = this.tx.active?.manager ?? this.dataSource.manager;
+    const rows: { user_id: string }[] = await manager.query(
+      `SELECT user_id FROM one_time_tokens
+       WHERE token_hash = decode($1, 'hex') AND purpose = $2
+         AND consumed_at IS NULL AND expires_at > $3`,
+      [tokenHash, purpose, now],
+    );
+    const row = first(rows);
+    return row ? { userId: row.user_id as UserId } : undefined;
+  }
+
   async consume(
     purpose: TokenPurpose,
     tokenHash: string,

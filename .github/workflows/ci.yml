@@ -41,6 +41,9 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U cornal_auth -d cornal_auth"
           --health-interval 2s --health-timeout 3s --health-retries 30
+      mailpit:
+        image: axllent/mailpit
+        ports: ['1025:1025', '8025:8025']
       redis:
         image: redis:7-alpine
         ports: ['6379:6379']

@@ -15,7 +15,7 @@ Auth service của hệ thống microservices cornal.
 - Hạ tầng: `docker compose up -d --wait` · Dev: `pnpm start:dev` (cổng `PORT`, mặc định 3001)
 - Build: `pnpm build` · Lint: `pnpm lint` · Format: `pnpm format`
 - Test: `pnpm test` (unit, không cần hạ tầng) · `pnpm test:int` · `pnpm test:e2e` · `pnpm test:all`
-- `test:int` / `test:e2e` cần `docker compose up -d --wait`; global setup tự tạo DB `cornal_auth_<project>` và chạy migration
+- `test:int` / `test:e2e` cần `docker compose up -d --wait` (Mailpit xem email dev: http://localhost:8025); global setup tự tạo DB `cornal_auth_<project>` và chạy migration
 - Migration: `pnpm build && pnpm db:migrate` (`pnpm db:revert` lùi 1 bước); luôn chạy qua `DATABASE_DIRECT_URL`, không qua PgBouncer
 - Node 24 (`.nvmrc`); env mẫu ở `.env.example` (`main.ts` tự nạp `.env` nếu có)
 

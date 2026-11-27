@@ -37,6 +37,12 @@ export interface OneTimeTokenRepository {
     expiresAt: Date;
   }): Promise<void>;
   revokeOpen(userId: UserId, purpose: TokenPurpose): Promise<void>;
+  /** Read-only check (no consume): lets callers reject bad tokens before expensive work. */
+  findValid(
+    purpose: TokenPurpose,
+    tokenHash: string,
+    now: Date,
+  ): Promise<{ userId: UserId } | undefined>;
   /** Atomic: returns the owner once; undefined if unknown, used, revoked or expired. */
   consume(
     purpose: TokenPurpose,
@@ -63,7 +69,8 @@ export interface SecretTokenGenerator {
   hash(raw: string): string;
 }
 
-export type EmailTemplate = 'verify-email' | 'account-exists';
+export type EmailTemplate =
+  'verify-email' | 'account-exists' | 'password-reset' | 'password-changed';
 
 export type EmailMessage = {
   readonly to: string;
@@ -75,4 +82,10 @@ export const EMAIL_SENDER = Symbol('EMAIL_SENDER');
 export interface EmailSender {
   /** Throws on delivery failure so the outbox retries the message. */
   send(message: EmailMessage): Promise<void>;
+}
+
+export const BREACHED_PASSWORD_CHECKER = Symbol('BREACHED_PASSWORD_CHECKER');
+/** Screens a candidate password against breach corpora. Fails open: unknown ⇒ false. */
+export interface BreachedPasswordChecker {
+  isBreached(plain: string): Promise<boolean>;
 }

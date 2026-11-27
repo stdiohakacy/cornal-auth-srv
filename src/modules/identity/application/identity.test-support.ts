@@ -5,6 +5,7 @@ import { Email } from '../domain/email.js';
 import { EmailTakenError } from '../domain/identity.errors.js';
 import { User, type UserId } from '../domain/user.js';
 import type {
+  BreachedPasswordChecker,
   EmailMessage,
   EmailSender,
   LoginAttemptCounter,
@@ -77,6 +78,16 @@ export class InMemoryOneTimeTokens implements OneTimeTokenRepository {
     for (const t of this.tokens)
       if (t.userId === userId && t.purpose === purpose) t.consumed = true;
   }
+  async findValid(purpose: TokenPurpose, tokenHash: string, now: Date) {
+    const token = this.tokens.find(
+      (t) =>
+        t.purpose === purpose &&
+        t.tokenHash === tokenHash &&
+        !t.consumed &&
+        t.expiresAt > now,
+    );
+    return token ? { userId: token.userId } : undefined;
+  }
   async consume(purpose: TokenPurpose, tokenHash: string, now: Date) {
     const token = this.tokens.find(
       (t) =>
@@ -139,4 +150,14 @@ export function capturingEmailSender() {
     sent.push(message);
   });
   return { sender: { send } satisfies EmailSender, send, sent };
+}
+
+export function fakeBreachChecker() {
+  const isBreached = vi.fn<BreachedPasswordChecker['isBreached']>(
+    async () => false,
+  );
+  return {
+    checker: { isBreached } satisfies BreachedPasswordChecker,
+    isBreached,
+  };
 }
