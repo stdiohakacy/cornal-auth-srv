@@ -1,4 +1,5 @@
 import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { days } from '#src/shared/domain/duration.js';
 import { ok } from '#src/shared/domain/result.js';
 import type {
   EmailSender,
@@ -8,7 +9,7 @@ import type {
 } from './ports.js';
 import { linkWithToken } from './issue-token-link.js';
 
-const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const INVITE_TTL_MS = days(7);
 
 /**
  * Worker side of an organization invitation: replaces any open invite for (org, email), stores the

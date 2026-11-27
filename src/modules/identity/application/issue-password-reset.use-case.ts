@@ -1,4 +1,5 @@
 import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { minutes } from '#src/shared/domain/duration.js';
 import { ok, type Result } from '#src/shared/domain/result.js';
 import type { UserId } from '../domain/user.js';
 import { issueTokenLink } from './issue-token-link.js';
@@ -9,7 +10,7 @@ import type {
   UserRepository,
 } from './ports.js';
 
-const TOKEN_TTL_MS = 30 * 60 * 1000;
+const TOKEN_TTL_MS = minutes(30);
 
 /** Worker side of "forgot password": a single-use, 30-minute reset link. */
 export class IssuePasswordResetUseCase {

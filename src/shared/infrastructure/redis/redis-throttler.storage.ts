@@ -4,6 +4,7 @@ import {
   ThrottlerStorageService,
 } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
+import { ceilSeconds, minutes } from '#src/shared/domain/duration.js';
 
 /**
  * Atomic fixed-window counter with an optional block key. Returns
@@ -34,9 +35,7 @@ type ThrottlerStorageRecord = Awaited<
   ReturnType<ThrottlerStorage['increment']>
 >;
 
-const DEGRADED_WARNING_INTERVAL_MS = 60_000;
-
-const toSeconds = (ms: number): number => Math.max(0, Math.ceil(ms / 1000));
+const DEGRADED_WARNING_INTERVAL_MS = minutes(1);
 
 function parseReply(reply: unknown): [number, number, number, number] {
   if (Array.isArray(reply) && reply.length === 4) {
@@ -90,9 +89,9 @@ export class RedisThrottlerStorage
       );
       return {
         totalHits: hits,
-        timeToExpire: toSeconds(windowTtl),
+        timeToExpire: ceilSeconds(windowTtl),
         isBlocked: blocked === 1,
-        timeToBlockExpire: toSeconds(blockTtl),
+        timeToBlockExpire: ceilSeconds(blockTtl),
       };
     } catch (error) {
       this.#warnDegraded(error);
