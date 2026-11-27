@@ -35,6 +35,10 @@ import { NotifyRegistrationAttemptUseCase } from './application/notify-registrat
 import { ChangePasswordUseCase } from './application/change-password.use-case.js';
 import { GetUserAuthStateUseCase } from './application/get-user-auth-state.use-case.js';
 import { GetUserEmailsUseCase } from './application/get-user-emails.use-case.js';
+import { ConsumeOrgInvitationUseCase } from './application/consume-org-invitation.use-case.js';
+import { IssueOrgInvitationUseCase } from './application/issue-org-invitation.use-case.js';
+import { ListOrgInvitationsUseCase } from './application/list-org-invitations.use-case.js';
+import { RevokeOrgInvitationUseCase } from './application/revoke-org-invitation.use-case.js';
 import { IssuePasswordResetUseCase } from './application/issue-password-reset.use-case.js';
 import { NotifyPasswordChangedUseCase } from './application/notify-password-changed.use-case.js';
 import { RegisterUserUseCase } from './application/register-user.use-case.js';
@@ -231,6 +235,63 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
       useFactory: (users: UserRepository) => new GetUserEmailsUseCase(users),
     },
     {
+      provide: IssueOrgInvitationUseCase,
+      inject: [
+        ONE_TIME_TOKEN_REPOSITORY,
+        SECRET_TOKEN_GENERATOR,
+        EMAIL_SENDER,
+        UNIT_OF_WORK,
+        CLOCK,
+        APP_CONFIG,
+      ],
+      useFactory: (
+        tokens: OneTimeTokenRepository,
+        generator: SecretTokenGenerator,
+        emails: EmailSender,
+        uow: UnitOfWork,
+        clock: Clock,
+        config: AppConfig,
+      ) =>
+        new IssueOrgInvitationUseCase(
+          tokens,
+          generator,
+          emails,
+          uow,
+          clock,
+          config.ORG_INVITATION_URL,
+        ),
+    },
+    {
+      provide: ConsumeOrgInvitationUseCase,
+      inject: [
+        USER_REPOSITORY,
+        ONE_TIME_TOKEN_REPOSITORY,
+        SECRET_TOKEN_GENERATOR,
+        UNIT_OF_WORK,
+        CLOCK,
+      ],
+      useFactory: (
+        users: UserRepository,
+        tokens: OneTimeTokenRepository,
+        generator: SecretTokenGenerator,
+        uow: UnitOfWork,
+        clock: Clock,
+      ) =>
+        new ConsumeOrgInvitationUseCase(users, tokens, generator, uow, clock),
+    },
+    {
+      provide: ListOrgInvitationsUseCase,
+      inject: [ONE_TIME_TOKEN_REPOSITORY, CLOCK],
+      useFactory: (tokens: OneTimeTokenRepository, clock: Clock) =>
+        new ListOrgInvitationsUseCase(tokens, clock),
+    },
+    {
+      provide: RevokeOrgInvitationUseCase,
+      inject: [ONE_TIME_TOKEN_REPOSITORY, UNIT_OF_WORK],
+      useFactory: (tokens: OneTimeTokenRepository, uow: UnitOfWork) =>
+        new RevokeOrgInvitationUseCase(tokens, uow),
+    },
+    {
       provide: ChangePasswordUseCase,
       inject: [
         USER_REPOSITORY,
@@ -347,6 +408,10 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
     GetUserAuthStateUseCase,
     ChangePasswordUseCase,
     GetUserEmailsUseCase,
+    IssueOrgInvitationUseCase,
+    ConsumeOrgInvitationUseCase,
+    ListOrgInvitationsUseCase,
+    RevokeOrgInvitationUseCase,
   ],
 })
 export class IdentityCoreModule implements OnModuleInit {

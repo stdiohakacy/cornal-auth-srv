@@ -3,6 +3,8 @@ import { first } from '../../../shared/domain/guard.js';
 import { TransactionContext } from '../../../shared/infrastructure/persistence/transaction-context.js';
 import type {
   OneTimeTokenRepository,
+  OpenOrgInvite,
+  OrgInvitePayload,
   TokenPurpose,
 } from '../application/ports.js';
 import type { UserId } from '../domain/user.js';
@@ -66,5 +68,76 @@ export class TypeOrmOneTimeTokenRepository implements OneTimeTokenRepository {
       );
     const row = first(rows);
     return row ? { userId: row.user_id as UserId } : undefined;
+  }
+
+  async issueOrgInvite(input: {
+    tokenHash: string;
+    payload: OrgInvitePayload;
+    expiresAt: Date;
+  }): Promise<void> {
+    await this.tx.requireManager().query(
+      `INSERT INTO one_time_tokens (token_hash, purpose, user_id, payload, expires_at)
+       VALUES (decode($1, 'hex'), 'org_invite', NULL, $2::jsonb, $3)`,
+      [input.tokenHash, JSON.stringify(input.payload), input.expiresAt],
+    );
+  }
+
+  async revokeOpenOrgInvites(orgId: string, email: string): Promise<void> {
+    await this.tx.requireManager().query(
+      `UPDATE one_time_tokens SET consumed_at = now()
+       WHERE purpose = 'org_invite' AND consumed_at IS NULL
+         AND payload->>'orgId' = $1 AND lower(payload->>'email') = lower($2)`,
+      [orgId, email],
+    );
+  }
+
+  async consumeOrgInvite(
+    tokenHash: string,
+    email: string,
+    now: Date,
+  ): Promise<OrgInvitePayload | undefined> {
+    const [rows]: [{ payload: OrgInvitePayload }[], number] = await this.tx
+      .requireManager()
+      .query(
+        `UPDATE one_time_tokens SET consumed_at = $3
+       WHERE token_hash = decode($1, 'hex') AND purpose = 'org_invite'
+         AND consumed_at IS NULL AND expires_at > $3
+         AND lower(payload->>'email') = lower($2)
+       RETURNING payload`,
+        [tokenHash, email, now],
+      );
+    return first(rows)?.payload;
+  }
+
+  async listOpenOrgInvites(orgId: string, now: Date): Promise<OpenOrgInvite[]> {
+    const manager = this.tx.active?.manager ?? this.dataSource.manager;
+    const rows: {
+      payload: OrgInvitePayload;
+      expires_at: Date;
+      created_at: Date;
+    }[] = await manager.query(
+      `SELECT payload, expires_at, created_at FROM one_time_tokens
+       WHERE purpose = 'org_invite' AND consumed_at IS NULL AND expires_at > $2
+         AND payload->>'orgId' = $1
+       ORDER BY created_at, token_hash`,
+      [orgId, now],
+    );
+    return rows.map((row) => ({
+      ...row.payload,
+      expiresAt: row.expires_at,
+      createdAt: row.created_at,
+    }));
+  }
+
+  async revokeOrgInvite(orgId: string, invitationId: string): Promise<boolean> {
+    const [, affected]: [unknown, number] = await this.tx
+      .requireManager()
+      .query(
+        `UPDATE one_time_tokens SET consumed_at = now()
+       WHERE purpose = 'org_invite' AND consumed_at IS NULL
+         AND payload->>'orgId' = $1 AND payload->>'invitationId' = $2`,
+        [orgId, invitationId],
+      );
+    return affected > 0;
   }
 }

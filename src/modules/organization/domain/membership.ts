@@ -80,6 +80,38 @@ export class Membership extends AggregateRoot<
     return membership;
   }
 
+  static createMember(input: {
+    orgId: string;
+    userId: string;
+    roleIds: readonly RoleId[];
+    now: Date;
+  }): Membership {
+    const roles = new RoleSet([]);
+    for (const roleId of input.roleIds) roles.add(roleId);
+    const membership = new Membership(
+      newId<'Membership'>(),
+      {
+        orgId: input.orgId,
+        userId: input.userId,
+        status: 'active',
+        roles,
+        authzVersion: 0,
+        createdAt: input.now,
+      },
+      0,
+    );
+    membership.raise(
+      createEvent({
+        type: 'organization.member_added',
+        aggregateType: 'Membership',
+        aggregateId: membership.id,
+        payload: { orgId: input.orgId, userId: input.userId },
+        occurredAt: input.now,
+      }),
+    );
+    return membership;
+  }
+
   static reconstitute(
     id: MembershipId,
     props: MembershipProps,
@@ -108,5 +140,32 @@ export class Membership extends AggregateRoot<
   }
   get isActive(): boolean {
     return this.props.status === 'active';
+  }
+
+  /** Replaces the role set; true (and authzVersion++) only when something changed. */
+  replaceRoles(roleIds: readonly RoleId[]): boolean {
+    const wanted = new Set(roleIds);
+    const toRemove = this.props.roles.items.filter((id) => !wanted.has(id));
+    const toAdd = [...wanted].filter((id) => !this.props.roles.has(id));
+    for (const id of toRemove) this.props.roles.remove(id);
+    for (const id of toAdd) this.props.roles.add(id);
+    const changed = toRemove.length + toAdd.length > 0;
+    if (changed) this.props.authzVersion += 1;
+    return changed;
+  }
+
+  suspend(): boolean {
+    return this.changeStatus('suspended');
+  }
+
+  reactivate(): boolean {
+    return this.changeStatus('active');
+  }
+
+  private changeStatus(status: 'active' | 'suspended'): boolean {
+    if (this.props.status === status) return false;
+    this.props.status = status;
+    this.props.authzVersion += 1;
+    return true;
   }
 }

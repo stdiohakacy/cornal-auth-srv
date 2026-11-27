@@ -44,6 +44,16 @@ export const OrgErrorCode = {
   NotMember: 'ORG.NOT_MEMBER',
   MfaRequired: 'ORG.MFA_REQUIRED',
   EmailNotVerified: 'ORG.EMAIL_NOT_VERIFIED',
+  MemberNotFound: 'ORG.MEMBER_NOT_FOUND',
+  AlreadyMember: 'ORG.ALREADY_MEMBER',
+  LastOwner: 'ORG.LAST_OWNER',
+  InsufficientPrivilege: 'ORG.INSUFFICIENT_PRIVILEGE',
+  RoleNotFound: 'ORG.ROLE_NOT_FOUND',
+  RoleKeyTaken: 'ORG.ROLE_KEY_TAKEN',
+  RoleInUse: 'ORG.ROLE_IN_USE',
+  InvalidRoleKey: 'ORG.INVALID_ROLE_KEY',
+  InvitationInvalid: 'ORG.INVITATION_INVALID',
+  InvitationNotFound: 'ORG.INVITATION_NOT_FOUND',
 } as const;
 export type OrgErrorCode = (typeof OrgErrorCode)[keyof typeof OrgErrorCode];
 
