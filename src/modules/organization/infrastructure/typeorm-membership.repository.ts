@@ -28,19 +28,41 @@ export class TypeOrmMembershipRepository implements MembershipRepository {
     private readonly tx: TransactionContext,
   ) {}
 
+  async findById(id: MembershipId): Promise<Membership | undefined> {
+    return this.findOne('m.id = $1', [id]);
+  }
+
   async findByOrgAndUser(
     orgId: string,
     userId: string,
   ): Promise<Membership | undefined> {
+    return this.findOne('m.org_id = $1 AND m.user_id = $2', [orgId, userId]);
+  }
+
+  async delete(membership: Membership): Promise<void> {
+    const [, affected]: [unknown, number] = await this.tx
+      .requireManager()
+      .query('DELETE FROM memberships WHERE id = $1 AND version = $2', [
+        membership.id,
+        membership.version,
+      ]);
+    if (affected !== 1)
+      throw new ConcurrencyConflictError('Membership', membership.id);
+  }
+
+  private async findOne(
+    where: string,
+    params: unknown[],
+  ): Promise<Membership | undefined> {
     const manager = this.tx.active?.manager ?? this.dataSource.manager;
     const rows: MembershipRow[] = await manager.query(
       `SELECT m.id, m.org_id, m.user_id, m.status, m.authz_version, m.created_at, m.version,
-         COALESCE(array_agg(mr.role_id ORDER BY mr.granted_at) FILTER (WHERE mr.role_id IS NOT NULL), '{}')
+         COALESCE(array_agg(mr.role_id ORDER BY mr.granted_at, mr.role_id) FILTER (WHERE mr.role_id IS NOT NULL), '{}')
            AS role_ids
        FROM memberships m LEFT JOIN membership_roles mr ON mr.membership_id = m.id
-       WHERE m.org_id = $1 AND m.user_id = $2
+       WHERE ${where}
        GROUP BY m.id`,
-      [orgId, userId],
+      params,
     );
     const row = first(rows);
     return row

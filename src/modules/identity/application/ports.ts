@@ -51,7 +51,37 @@ export interface OneTimeTokenRepository {
     tokenHash: string,
     now: Date,
   ): Promise<{ userId: UserId } | undefined>;
+
+  /** Organization invitations: no user yet (user_id NULL); the payload carries the target. */
+  issueOrgInvite(input: {
+    tokenHash: string;
+    payload: OrgInvitePayload;
+    expiresAt: Date;
+  }): Promise<void>;
+  revokeOpenOrgInvites(orgId: string, email: string): Promise<void>;
+  /** Atomic; only when the invited email equals `email` (case-insensitive). */
+  consumeOrgInvite(
+    tokenHash: string,
+    email: string,
+    now: Date,
+  ): Promise<OrgInvitePayload | undefined>;
+  listOpenOrgInvites(orgId: string, now: Date): Promise<OpenOrgInvite[]>;
+  /** True when an open invite was revoked. */
+  revokeOrgInvite(orgId: string, invitationId: string): Promise<boolean>;
 }
+
+export type OrgInvitePayload = {
+  readonly invitationId: string;
+  readonly orgId: string;
+  readonly email: string;
+  readonly roleIds: readonly string[];
+  readonly invitedBy: string;
+};
+
+export type OpenOrgInvite = OrgInvitePayload & {
+  readonly expiresAt: Date;
+  readonly createdAt: Date;
+};
 
 export const PASSWORD_HASHER = Symbol('PASSWORD_HASHER');
 /** Hashing is admission-controlled: a saturated pod answers ServiceBusyError instead of queueing. */
@@ -72,12 +102,16 @@ export interface SecretTokenGenerator {
 }
 
 export type EmailTemplate =
-  'verify-email' | 'account-exists' | 'password-reset' | 'password-changed';
+  | 'verify-email'
+  | 'account-exists'
+  | 'password-reset'
+  | 'password-changed'
+  | 'org-invitation';
 
 export type EmailMessage = {
   readonly to: string;
   readonly template: EmailTemplate;
-  readonly data: { readonly link: string };
+  readonly data: { readonly link: string; readonly orgName?: string };
 };
 
 export const EMAIL_SENDER = Symbol('EMAIL_SENDER');

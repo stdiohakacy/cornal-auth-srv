@@ -71,6 +71,10 @@ export const EnvSchema = z
     APP_LOGIN_URL: z.url().default('http://localhost:3000/login'),
     /** Frontend page that receives `?token=` from the password-reset email. */
     PASSWORD_RESET_URL: z.url().default('http://localhost:3000/reset-password'),
+    /** Frontend page that receives `?token=` from an organization invitation email. */
+    ORG_INVITATION_URL: z
+      .url()
+      .default('http://localhost:3000/accept-invitation'),
     /** `log` prints emails (with their secret links) to the log: development only. */
     EMAIL_TRANSPORT: z.enum(['log', 'smtp']).default('log'),
     /** e.g. smtps://user:pass@smtp.provider.com:465 or smtp://localhost:1025 (Mailpit). */

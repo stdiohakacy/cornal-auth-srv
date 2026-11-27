@@ -10,6 +10,7 @@ import type {
   EmailSender,
   LoginAttemptCounter,
   OneTimeTokenRepository,
+  OrgInvitePayload,
   PasswordHasher,
   SecretTokenGenerator,
   TokenPurpose,
@@ -109,6 +110,58 @@ export class InMemoryOneTimeTokens implements OneTimeTokenRepository {
     if (!token) return undefined;
     token.consumed = true;
     return { userId: token.userId };
+  }
+  readonly invites: {
+    tokenHash: string;
+    payload: OrgInvitePayload;
+    expiresAt: Date;
+    createdAt: Date;
+    consumed: boolean;
+  }[] = [];
+  async issueOrgInvite(input: {
+    tokenHash: string;
+    payload: OrgInvitePayload;
+    expiresAt: Date;
+  }) {
+    this.invites.push({ ...input, createdAt: NOW, consumed: false });
+  }
+  async revokeOpenOrgInvites(orgId: string, email: string) {
+    for (const i of this.invites)
+      if (i.payload.orgId === orgId && i.payload.email === email.toLowerCase())
+        i.consumed = true;
+  }
+  async consumeOrgInvite(tokenHash: string, email: string, now: Date) {
+    const invite = this.invites.find(
+      (i) =>
+        i.tokenHash === tokenHash &&
+        !i.consumed &&
+        i.expiresAt > now &&
+        i.payload.email === email.toLowerCase(),
+    );
+    if (!invite) return undefined;
+    invite.consumed = true;
+    return invite.payload;
+  }
+  async listOpenOrgInvites(orgId: string, now: Date) {
+    return this.invites
+      .filter(
+        (i) => i.payload.orgId === orgId && !i.consumed && i.expiresAt > now,
+      )
+      .map((i) => ({
+        ...i.payload,
+        expiresAt: i.expiresAt,
+        createdAt: i.createdAt,
+      }));
+  }
+  async revokeOrgInvite(orgId: string, invitationId: string) {
+    const invite = this.invites.find(
+      (i) =>
+        i.payload.orgId === orgId &&
+        i.payload.invitationId === invitationId &&
+        !i.consumed,
+    );
+    if (invite) invite.consumed = true;
+    return invite !== undefined;
   }
   open(userId: UserId) {
     return this.tokens.filter((t) => t.userId === userId && !t.consumed);

@@ -16,7 +16,7 @@ type Copy = {
   footer: string;
 };
 
-function copyFor(template: EmailMessage['template']): Copy {
+function copyFor({ template, data }: EmailMessage): Copy {
   switch (template) {
     case 'verify-email':
       return {
@@ -54,6 +54,15 @@ function copyFor(template: EmailMessage['template']): Copy {
         footer:
           'If you did not do this, reset your password immediately and contact support.',
       };
+    case 'org-invitation':
+      return {
+        subject: `You are invited to join ${data.orgName ?? 'an organization'} on Cornal`,
+        heading: `Join ${data.orgName ?? 'the organization'}`,
+        body: `You have been invited to join ${data.orgName ?? 'an organization'} on Cornal. Sign in or create an account with this email address, then accept the invitation.`,
+        action: 'Accept invitation',
+        footer:
+          'The invitation expires in 7 days and works once. If you were not expecting it, ignore this email.',
+      };
     default:
       return assertNever(template);
   }
@@ -61,7 +70,7 @@ function copyFor(template: EmailMessage['template']): Copy {
 
 /** Pure rendering: every interpolated value is HTML-escaped by `html```. */
 export function renderEmail(message: EmailMessage): RenderedEmail {
-  const copy = copyFor(message.template);
+  const copy = copyFor(message);
   const { link } = message.data;
   return {
     subject: copy.subject,

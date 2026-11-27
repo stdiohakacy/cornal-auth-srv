@@ -5,6 +5,7 @@ import { HealthModule } from './health/health.module.js';
 import { AccessControlCoreModule } from './modules/access-control/access-control-core.module.js';
 import { AccessControlHttpModule } from './modules/access-control/access-control-http.module.js';
 import { OrganizationApiModule } from './modules/organization/organization-api.module.js';
+import { OrganizationWorkerModule } from './modules/organization/organization-worker.module.js';
 import { IdentityApiModule } from './modules/identity/identity-api.module.js';
 import { IdentityHttpModule } from './modules/identity/identity-http.module.js';
 import { IdentityWorkerModule } from './modules/identity/identity-worker.module.js';
@@ -38,7 +39,11 @@ function roleModules(role: AppRole) {
         AccessControlHttpModule,
       ];
     case 'worker':
-      return [IdentityWorkerModule, SessionWorkerModule];
+      return [
+        IdentityWorkerModule,
+        SessionWorkerModule,
+        OrganizationWorkerModule,
+      ];
     default:
       return assertNever(role);
   }

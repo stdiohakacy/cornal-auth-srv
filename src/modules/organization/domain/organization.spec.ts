@@ -1,4 +1,5 @@
 import type { Id } from '../../../shared/domain/id.js';
+import { Invitation } from './invitation.js';
 import { Membership } from './membership.js';
 import { Organization } from './organization.js';
 import { Slug } from './slug.js';
@@ -63,6 +64,47 @@ describe('Membership', () => {
     expect(membership.authzVersion).toBe(0);
     expect(membership.pendingEvents.map((e) => e.type)).toEqual([
       'organization.member_added',
+    ]);
+  });
+});
+
+describe('Organization authz epoch', () => {
+  it('bumpAuthzEpoch increments', () => {
+    const slug = Slug.create('acme');
+    if (!slug.ok) throw new Error('fixture');
+    const org = Organization.create({ name: 'Acme', slug: slug.value, now });
+
+    org.bumpAuthzEpoch();
+    org.bumpAuthzEpoch();
+
+    expect(org.snapshot.authzEpoch).toBe(2);
+  });
+});
+
+describe('Invitation', () => {
+  it('create raises organization.invitation.created with the payload', () => {
+    const invitation = Invitation.create({
+      orgId: 'org-1',
+      orgName: 'Acme',
+      email: 'new@b.co',
+      roleIds: ['role-member'],
+      invitedBy: 'u1',
+      now,
+    });
+
+    expect(invitation.pendingEvents).toEqual([
+      expect.objectContaining({
+        type: 'organization.invitation.created',
+        aggregateId: invitation.id,
+        payload: {
+          invitationId: invitation.id,
+          orgId: 'org-1',
+          orgName: 'Acme',
+          email: 'new@b.co',
+          roleIds: ['role-member'],
+          invitedBy: 'u1',
+        },
+      }),
     ]);
   });
 });

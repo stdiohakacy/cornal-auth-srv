@@ -1,6 +1,6 @@
 import type { DataSource } from 'typeorm';
 import { first } from '../../../shared/domain/guard.js';
-import type { OrganizationReads } from '../application/ports.js';
+import type { OrganizationReads, RoleView } from '../application/ports.js';
 
 export type MembershipContextRow = {
   readonly membershipId: string;
@@ -110,5 +110,49 @@ export class OrganizationQueries implements OrganizationReads {
       status: r.status,
       roleKeys: r.role_keys,
     }));
+  }
+
+  async rolesOf(orgId: string): Promise<RoleView[]> {
+    return this.roles('r.org_id IS NULL OR r.org_id = $1', [orgId]);
+  }
+
+  async rolesByIds(orgId: string, ids: readonly string[]): Promise<RoleView[]> {
+    if (ids.length === 0) return [];
+    return this.roles(
+      '(r.org_id IS NULL OR r.org_id = $1) AND r.id = ANY($2::uuid[])',
+      [orgId, ids],
+    );
+  }
+
+  async activeOwnerCount(orgId: string): Promise<number> {
+    const rows: { n: number }[] = await this.dataSource.query(
+      `SELECT count(DISTINCT m.id)::int AS n
+       FROM memberships m
+       JOIN membership_roles mr ON mr.membership_id = m.id
+       JOIN roles r ON r.id = mr.role_id AND r.org_id IS NULL AND r.key = 'owner'
+       WHERE m.org_id = $1 AND m.status = 'active'`,
+      [orgId],
+    );
+    return first(rows)?.n ?? 0;
+  }
+
+  private async roles(where: string, params: unknown[]): Promise<RoleView[]> {
+    const rows: {
+      id: string;
+      key: string;
+      name: string;
+      system: boolean;
+      permissions: string[];
+    }[] = await this.dataSource.query(
+      `SELECT r.id, r.key, r.name, (r.org_id IS NULL) AS system,
+           COALESCE(array_agg(rp.permission_code ORDER BY rp.permission_code)
+             FILTER (WHERE rp.permission_code IS NOT NULL), '{}') AS permissions
+         FROM roles r LEFT JOIN role_permissions rp ON rp.role_id = r.id
+         WHERE ${where}
+         GROUP BY r.id
+         ORDER BY (r.org_id IS NULL) DESC, r.key`,
+      params,
+    );
+    return rows;
   }
 }

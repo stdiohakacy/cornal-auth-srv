@@ -70,6 +70,11 @@ export class Organization extends AggregateRoot<
     return new Organization(id, props, version);
   }
 
+  /** A role definition of this org changed: every token scoped to the org becomes stale. */
+  bumpAuthzEpoch(): void {
+    this.props.authzEpoch += 1;
+  }
+
   get snapshot(): Readonly<OrganizationProps> {
     return this.props;
   }

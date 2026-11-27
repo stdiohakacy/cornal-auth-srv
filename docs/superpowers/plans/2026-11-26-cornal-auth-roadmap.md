@@ -211,9 +211,9 @@ Ref: SD§3.4, SD§4.1, PB§4.3
 - An e2e test covers login → refresh ×3 → reuse of an old token → the whole session is revoked.
 - A test shows the device list returns IP, UA and `last_active_at`.
 
-## Phase 5 — Organizations, memberships & RBAC
+## Phase 5 — Organizations, memberships & RBAC ✅
 
-> 5a done — detailed plan: `2026-11-27-phase-5a-orgs-rbac.md` (code catalog synced to DB, orgs + owner membership, org claims `org/mid/mv/ov/pcv/pbits`, login default org = most recently used or the only one, switch org, `PermissionsGuard`, permission-catalog endpoint). 5b pending: invitations, custom-role CRUD, assign/unassign, suspend.
+> Done — detailed plans: `2026-11-27-phase-5a-orgs-rbac.md` (code catalog synced to DB, orgs + owner membership, org claims `org/mid/mv/ov/pcv/pbits`, login default org, switch org, `PermissionsGuard`, permission-catalog endpoint) and `2026-11-27-phase-5b-members-roles.md` (invitations via `one_time_tokens(org_invite)` minted by the worker, accept with matching verified email, custom-role CRUD with `authz_epoch` bump, member role/status changes with `authz_version` bump, remove member, no-escalation and last-owner rules). Deviations: catalog served at `/.well-known/permission-catalog.json` (not `/internal`); no Redis pbits cache yet (computed per issue); `StepUpGuard` moves to the MFA phase.
 
 Ref: SD§2, SD§3.2, SD§3.4
 
