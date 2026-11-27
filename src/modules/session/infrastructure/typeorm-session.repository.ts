@@ -54,6 +54,18 @@ export class TypeOrmSessionRepository implements SessionRepository {
     return row ? toSession(row) : undefined;
   }
 
+  async listActiveByUser(userId: string, now: Date): Promise<Session[]> {
+    const manager = this.tx.active?.manager ?? this.dataSource.manager;
+    // sessions_user_live_idx (user_id) WHERE revoked_at IS NULL; a user has a handful of rows.
+    const rows: SessionRow[] = await manager.query(
+      `SELECT ${SELECT_COLUMNS} FROM sessions
+       WHERE user_id = $1 AND revoked_at IS NULL AND idle_expires_at > $2 AND absolute_expires_at > $2
+       ORDER BY last_active_at DESC`,
+      [userId, now],
+    );
+    return rows.map(toSession);
+  }
+
   async save(session: Session): Promise<void> {
     const manager = this.tx.requireManager();
     if (session.version === 0) {

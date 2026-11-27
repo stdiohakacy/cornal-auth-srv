@@ -151,6 +151,21 @@ export class User extends AggregateRoot<UserId, UserProps, UserEvent> {
     );
   }
 
+  /** Signed-in change (current password already verified). tokenVersion++ revokes issued tokens. */
+  changePassword(newPasswordHash: string, now: Date): void {
+    this.props.passwordHash = newPasswordHash;
+    this.props.tokenVersion += 1;
+    this.raise(
+      createEvent({
+        type: 'identity.user.password_changed',
+        aggregateType: 'User',
+        aggregateId: this.id,
+        payload: { reason: 'change' as const },
+        occurredAt: now,
+      }),
+    );
+  }
+
   noteRegistrationAttempt(now: Date): void {
     this.raise(
       createEvent({

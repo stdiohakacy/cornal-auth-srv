@@ -25,6 +25,7 @@ export const ERROR_STATUS = {
   'IDENTITY.PASSWORD_BREACHED': HttpStatus.UNPROCESSABLE_ENTITY,
   'SESSION.INVALID': HttpStatus.UNAUTHORIZED,
   'SESSION.REFRESH_CONFLICT': HttpStatus.CONFLICT,
+  'SESSION.NOT_FOUND': HttpStatus.NOT_FOUND,
 } as const satisfies Record<ErrorCode, HttpStatus>;
 
 export const isErrorCode = (code: string): code is ErrorCode =>

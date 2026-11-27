@@ -6,15 +6,13 @@ import {
   type AccountLockedError,
   InvalidCredentialsError,
 } from '../domain/identity.errors.js';
-import type { User, UserId } from '../domain/user.js';
+import type { UserId } from '../domain/user.js';
+import { recordPasswordFailure } from './login-failures.js';
 import type {
   LoginAttemptCounter,
   PasswordHasher,
   UserRepository,
 } from './ports.js';
-
-const MAX_FAILURES = 5;
-const LOCK_DURATION_MS = 15 * 60_000;
 
 export type VerifiedCredentials = {
   readonly userId: UserId;
@@ -61,7 +59,11 @@ export class VerifyCredentialsUseCase {
     if (!valid.ok) return valid;
     if (!user || user.passwordHash === null || !valid.value) {
       if (user) {
-        const recorded = await this.recordFailure(user, now);
+        const recorded = await recordPasswordFailure(
+          { attempts: this.attempts, users: this.users, uow: this.uow },
+          user,
+          now,
+        );
         if (!recorded.ok) return recorded;
       }
       return err(new InvalidCredentialsError());
@@ -80,23 +82,5 @@ export class VerifyCredentialsUseCase {
       emailVerified: user.emailVerifiedAt !== null,
       tokenVersion: user.tokenVersion,
     });
-  }
-
-  /** Counts the failure; the MAX_FAILURES-th one locks the account. */
-  private async recordFailure(
-    user: User,
-    now: Date,
-  ): Promise<Result<void, ServiceBusyError>> {
-    const failures = await this.attempts.registerFailure(user.id);
-    if (!failures.ok) return failures;
-    if (failures.value < MAX_FAILURES) return ok(undefined);
-    user.lock(now, LOCK_DURATION_MS);
-    await this.uow.run(async () => {
-      await this.users.save(user);
-      return ok(undefined);
-    });
-    // Fresh budget once the lock expires. A failed reset only means the window ends naturally.
-    await this.attempts.reset(user.id);
-    return ok(undefined);
   }
 }

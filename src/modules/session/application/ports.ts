@@ -30,6 +30,8 @@ export interface RefreshTokenFactory {
 export const SESSION_REPOSITORY = Symbol('SESSION_REPOSITORY');
 export interface SessionRepository {
   findById(id: SessionId): Promise<Session | undefined>;
+  /** Active (not revoked, not expired) sessions of a user, most recent activity first. */
+  listActiveByUser(userId: string, now: Date): Promise<Session[]>;
   /** Insert or optimistic update; throws ConcurrencyConflictError on a stale version. */
   save(session: Session): Promise<void>;
 }

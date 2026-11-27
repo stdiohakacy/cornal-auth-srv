@@ -33,6 +33,7 @@ export type IdentityErrorCode =
 export const SessionErrorCode = {
   Invalid: 'SESSION.INVALID',
   RefreshConflict: 'SESSION.REFRESH_CONFLICT',
+  NotFound: 'SESSION.NOT_FOUND',
 } as const;
 export type SessionErrorCode =
   (typeof SessionErrorCode)[keyof typeof SessionErrorCode];

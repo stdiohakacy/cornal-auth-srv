@@ -132,4 +132,20 @@ describe('User', () => {
       }),
     ]);
   });
+
+  it('changePassword replaces hash, bumps tokenVersion, raises password_changed change', () => {
+    const user = registered();
+    user.pullEvents();
+
+    user.changePassword('$argon2id$changed', now);
+
+    expect(user.passwordHash).toBe('$argon2id$changed');
+    expect(user.tokenVersion).toBe(1);
+    expect(user.pullEvents()).toEqual([
+      expect.objectContaining({
+        type: 'identity.user.password_changed',
+        payload: { reason: 'change' },
+      }),
+    ]);
+  });
 });

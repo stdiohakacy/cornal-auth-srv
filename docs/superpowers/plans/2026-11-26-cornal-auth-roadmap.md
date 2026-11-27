@@ -179,9 +179,9 @@ Ref: SD§3.3, SD§3.5, PB§2.4–2.5
 - Integration tests pass for register → verify → login credentials, and a reset that revokes sessions.
 - A benchmark shows event loop delay p99 under 10ms with 50 concurrent logins.
 
-## Phase 4 — Session & tokens (MVP) (4a ✅, 4b pending)
+## Phase 4 — Session & tokens (MVP) ✅
 
-> 4a done — plan: `2026-11-27-phase-4a-session-tokens.md` (login, ES256 + JWKS, refresh rotation/reuse, logout, AccessTokenGuard). 4b: device list, remote revoke, change password, revoke-on-password-change.
+> Done — plans: `2026-11-27-phase-4a-session-tokens.md`, `2026-11-27-phase-4b-devices-password.md`. StepUpGuard (amr/auth_time) moves to Phase 8 with MFA. Re-evaluate `@nestjs/authentication` (first-party, 0.x at the time) before Phases 8–9.
 
 Ref: SD§3.4, SD§4.1, PB§4.3
 
