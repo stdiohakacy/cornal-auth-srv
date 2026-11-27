@@ -1,11 +1,12 @@
 import type { UnitOfWork } from '#src/shared/application/ports.js';
+import { minutes } from '#src/shared/domain/duration.js';
 import { ok, type Result } from '#src/shared/domain/result.js';
 import type { ServiceBusyError } from '#src/shared/domain/service-busy.error.js';
 import type { User } from '../domain/user.js';
 import type { LoginAttemptCounter, UserRepository } from './ports.js';
 
 const MAX_FAILURES = 5;
-const LOCK_DURATION_MS = 15 * 60_000;
+const LOCK_DURATION_MS = minutes(15);
 
 /**
  * Counts a failed password proof (login or change-password); the MAX_FAILURES-th one locks the

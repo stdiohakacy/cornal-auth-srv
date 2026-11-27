@@ -1,3 +1,4 @@
+import { seconds, secondsUntil } from '#src/shared/domain/duration.js';
 import type { Session } from '../domain/session.js';
 import {
   type AccessTokenService,
@@ -20,14 +21,9 @@ export type SessionTtl = {
   readonly absoluteSeconds: number;
 };
 
-export const secondsUntil = (from: Date, to: Date): number =>
-  Math.max(0, Math.floor((to.getTime() - from.getTime()) / 1000));
-
-const MS_PER_SECOND = 1000;
-export const idleTtlMs = (ttl: SessionTtl): number =>
-  ttl.idleSeconds * MS_PER_SECOND;
+export const idleTtlMs = (ttl: SessionTtl): number => seconds(ttl.idleSeconds);
 export const absoluteTtlMs = (ttl: SessionTtl): number =>
-  ttl.absoluteSeconds * MS_PER_SECOND;
+  seconds(ttl.absoluteSeconds);
 
 /** Who the access token speaks for: the session, the user's token version and the active org. */
 export type SessionGrant = {

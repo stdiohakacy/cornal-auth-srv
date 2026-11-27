@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { days, inSeconds } from '../shared/domain/duration.js';
 import { err, ok, type Result } from '../shared/domain/result.js';
 
 /** `[{ "kid": "...", "pem": "-----BEGIN PRIVATE KEY-----..." }]`: index 0 signs, all are published. */
@@ -106,12 +107,12 @@ export const EnvSchema = z
       .number()
       .int()
       .positive()
-      .default(14 * 24 * 3600),
+      .default(inSeconds(days(14))),
     REFRESH_ABSOLUTE_TTL_SECONDS: z.coerce
       .number()
       .int()
       .positive()
-      .default(30 * 24 * 3600),
+      .default(inSeconds(days(30))),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && env.JWT_SIGNING_KEYS === undefined) {

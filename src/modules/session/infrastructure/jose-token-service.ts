@@ -1,5 +1,9 @@
 import { randomUUIDv7 } from 'node:crypto';
 import { jwtVerify, SignJWT } from 'jose';
+import {
+  fromEpochSeconds,
+  toEpochSeconds,
+} from '#src/shared/domain/duration.js';
 import type {
   AccessClaims,
   AccessTokenService,
@@ -29,7 +33,7 @@ export class JoseTokenService implements AccessTokenService {
       sid: claims.sid,
       uv: claims.uv,
       amr: [...claims.amr],
-      auth_time: Math.floor(claims.authTime.getTime() / 1000),
+      auth_time: toEpochSeconds(claims.authTime),
       ...(claims.org
         ? {
             org: claims.org.orgId,
@@ -82,7 +86,7 @@ export class JoseTokenService implements AccessTokenService {
         sid,
         uv,
         amr,
-        authTime: new Date(authTime * 1000),
+        authTime: fromEpochSeconds(authTime),
         ...(org ? { org } : {}),
       };
     } catch {

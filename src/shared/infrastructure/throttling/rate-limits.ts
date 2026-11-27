@@ -1,28 +1,29 @@
 import { createHash } from 'node:crypto';
 import type { ExecutionContext } from '@nestjs/common';
 import type { ThrottlerOptions } from '@nestjs/throttler';
-
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
+import { HOUR_MS, MINUTE_MS, minutes } from '#src/shared/domain/duration.js';
 
 type Limit = { readonly limit: number; readonly ttl: number };
 
 /** Per-route limits (CORNAL plan, Phase 3a). Routes opt in with @Throttle(RATE_LIMITS.x). */
 export const RATE_LIMITS = {
-  register: { ip: { limit: 10, ttl: HOUR }, email: { limit: 3, ttl: HOUR } },
-  verifyEmail: { ip: { limit: 30, ttl: 15 * MINUTE } },
-  forgotPassword: {
-    ip: { limit: 10, ttl: HOUR },
-    email: { limit: 3, ttl: HOUR },
+  register: {
+    ip: { limit: 10, ttl: HOUR_MS },
+    email: { limit: 3, ttl: HOUR_MS },
   },
-  resetPassword: { ip: { limit: 20, ttl: 15 * MINUTE } },
-  refresh: { ip: { limit: 60, ttl: MINUTE } },
-  meSessions: { ip: { limit: 120, ttl: MINUTE } },
-  changePassword: { ip: { limit: 10, ttl: HOUR } },
+  verifyEmail: { ip: { limit: 30, ttl: minutes(15) } },
+  forgotPassword: {
+    ip: { limit: 10, ttl: HOUR_MS },
+    email: { limit: 3, ttl: HOUR_MS },
+  },
+  resetPassword: { ip: { limit: 20, ttl: minutes(15) } },
+  refresh: { ip: { limit: 60, ttl: MINUTE_MS } },
+  meSessions: { ip: { limit: 120, ttl: MINUTE_MS } },
+  changePassword: { ip: { limit: 10, ttl: HOUR_MS } },
   login: {
-    ip: { limit: 20, ttl: MINUTE },
-    email: { limit: 10, ttl: 15 * MINUTE },
-    ipEmail: { limit: 5, ttl: MINUTE },
+    ip: { limit: 20, ttl: MINUTE_MS },
+    email: { limit: 10, ttl: minutes(15) },
+    ipEmail: { limit: 5, ttl: MINUTE_MS },
   },
 } as const satisfies Record<string, Partial<Record<ThrottlerName, Limit>>>;
 
@@ -55,20 +56,20 @@ export const THROTTLERS: ThrottlerOptions[] = [
   {
     name: 'ip',
     limit: 300,
-    ttl: MINUTE,
+    ttl: MINUTE_MS,
     getTracker: (req: RequestLike) => ipOf(req),
   },
   {
     name: 'email',
     limit: 100,
-    ttl: MINUTE,
+    ttl: MINUTE_MS,
     skipIf: hasNoEmail,
     getTracker: (req: RequestLike) => sha256(emailOf(req) ?? ''),
   },
   {
     name: 'ipEmail',
     limit: 100,
-    ttl: MINUTE,
+    ttl: MINUTE_MS,
     skipIf: hasNoEmail,
     getTracker: (req: RequestLike) =>
       `${ipOf(req)}|${sha256(emailOf(req) ?? '')}`,

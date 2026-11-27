@@ -1,4 +1,5 @@
 import { html, type SafeHtml } from '@nestjs/mail';
+import { DAY_MS, HOUR_MS, MINUTE_MS } from '#src/shared/domain/duration.js';
 import type { EmailMessage } from '../application/ports.js';
 
 export type RenderedEmail = {
@@ -16,10 +17,6 @@ type Copy = {
 };
 
 type Data = EmailMessage['data'];
-
-const MINUTE_MS = 60_000;
-const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
 
 const DURATION = new Intl.DurationFormat('en', { style: 'long' });
 

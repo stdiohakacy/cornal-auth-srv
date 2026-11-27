@@ -1,4 +1,5 @@
 import type { CookieOptions } from 'express';
+import { seconds } from '#src/shared/domain/duration.js';
 
 export const REFRESH_COOKIE_NAME = 'cornal_rt';
 
@@ -12,7 +13,7 @@ export const READ_REFRESH_COOKIE_OPTIONS: CookieOptions = {
 
 /** Scoped to /auth so the refresh token is never sent to API routes, and unreadable by scripts. */
 export function refreshCookieOptions(maxAgeSeconds: number): CookieOptions {
-  return { ...READ_REFRESH_COOKIE_OPTIONS, maxAge: maxAgeSeconds * 1000 };
+  return { ...READ_REFRESH_COOKIE_OPTIONS, maxAge: seconds(maxAgeSeconds) };
 }
 
 /** Minimal Cookie-header reader for our one cookie (no cookie-parser dependency). */
