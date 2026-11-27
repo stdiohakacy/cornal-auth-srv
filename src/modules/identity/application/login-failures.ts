@@ -1,15 +1,12 @@
 import type { UnitOfWork } from '#src/shared/application/ports.js';
-import { minutes } from '#src/shared/domain/duration.js';
 import { ok, type Result } from '#src/shared/domain/result.js';
 import type { ServiceBusyError } from '#src/shared/domain/service-busy.error.js';
+import { IDENTITY_POLICY } from '../domain/identity-policy.js';
 import type { User } from '../domain/user.js';
 import type { LoginAttemptCounter, UserRepository } from './ports.js';
 
-const MAX_FAILURES = 5;
-const LOCK_DURATION_MS = minutes(15);
-
 /**
- * Counts a failed password proof (login or change-password); the MAX_FAILURES-th one locks the
+ * Counts a failed password proof (login or change-password); the `lockout.maxFailures`-th one locks the
  * account. Counter unavailable ⇒ ServiceBusyError (fail closed).
  */
 export async function recordPasswordFailure(
@@ -23,8 +20,9 @@ export async function recordPasswordFailure(
 ): Promise<Result<void, ServiceBusyError>> {
   const failures = await deps.attempts.registerFailure(user.id);
   if (!failures.ok) return failures;
-  if (failures.value < MAX_FAILURES) return ok(undefined);
-  user.lock(now, LOCK_DURATION_MS);
+  if (failures.value < IDENTITY_POLICY.lockout.maxFailures)
+    return ok(undefined);
+  user.lock(now, IDENTITY_POLICY.lockout.lockDurationMs);
   await deps.uow.run(async () => {
     await deps.users.save(user);
     return ok(undefined);

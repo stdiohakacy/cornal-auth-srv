@@ -1,6 +1,6 @@
 import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
-import { days } from '#src/shared/domain/duration.js';
 import { ok } from '#src/shared/domain/result.js';
+import { IDENTITY_POLICY } from '../domain/identity-policy.js';
 import type {
   EmailSender,
   OneTimeTokenRepository,
@@ -8,8 +8,6 @@ import type {
   SecretTokenGenerator,
 } from './ports.js';
 import { linkWithToken } from './issue-token-link.js';
-
-const INVITE_TTL_MS = days(7);
 
 /**
  * Worker side of an organization invitation: replaces any open invite for (org, email), stores the
@@ -38,7 +36,9 @@ export class IssueOrgInvitationUseCase {
       await this.tokens.issueOrgInvite({
         tokenHash: hash,
         payload,
-        expiresAt: new Date(this.clock.now().getTime() + INVITE_TTL_MS),
+        expiresAt: new Date(
+          this.clock.now().getTime() + IDENTITY_POLICY.tokenTtlMs.orgInvitation,
+        ),
       });
       await this.emails.send({
         to: payload.email,
@@ -46,7 +46,7 @@ export class IssueOrgInvitationUseCase {
         data: {
           link: linkWithToken(this.invitationUrl, raw),
           orgName,
-          expiresInMs: INVITE_TTL_MS,
+          expiresInMs: IDENTITY_POLICY.tokenTtlMs.orgInvitation,
         },
       });
       return ok(undefined);

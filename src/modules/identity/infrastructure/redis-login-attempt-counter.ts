@@ -1,11 +1,13 @@
 import { Logger } from '@nestjs/common';
 import type { Redis } from 'ioredis';
+import { inSeconds } from '#src/shared/domain/duration.js';
 import { err, ok, type Result } from '#src/shared/domain/result.js';
 import { ServiceBusyError } from '#src/shared/domain/service-busy.error.js';
+import { IDENTITY_POLICY } from '../domain/identity-policy.js';
 import type { LoginAttemptCounter } from '../application/ports.js';
 import type { UserId } from '../domain/user.js';
 
-const WINDOW_SECONDS = 15 * 60;
+const WINDOW_SECONDS = inSeconds(IDENTITY_POLICY.lockout.failureWindowMs);
 const RETRY_AFTER_SECONDS = 1;
 
 /** INCR and start the window on the first failure, atomically. */

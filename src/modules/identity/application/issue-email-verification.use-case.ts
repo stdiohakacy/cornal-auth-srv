@@ -1,6 +1,6 @@
 import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
-import { hours } from '#src/shared/domain/duration.js';
 import { ok, type Result } from '#src/shared/domain/result.js';
+import { IDENTITY_POLICY } from '../domain/identity-policy.js';
 import type { UserId } from '../domain/user.js';
 import { issueTokenLink } from './issue-token-link.js';
 import type {
@@ -9,8 +9,6 @@ import type {
   SecretTokenGenerator,
   UserRepository,
 } from './ports.js';
-
-const TOKEN_TTL_MS = hours(24);
 
 export type IssueEmailVerificationOutcome =
   'sent' | 'already_verified' | 'user_missing';
@@ -39,7 +37,7 @@ export class IssueEmailVerificationUseCase {
         {
           spec: {
             purpose: 'email_verify',
-            ttlMs: TOKEN_TTL_MS,
+            ttlMs: IDENTITY_POLICY.tokenTtlMs.emailVerification,
             template: 'verify-email',
             baseUrl: this.verificationUrl,
           },
