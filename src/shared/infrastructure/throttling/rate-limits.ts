@@ -16,6 +16,7 @@ export const RATE_LIMITS = {
     email: { limit: 3, ttl: HOUR },
   },
   resetPassword: { ip: { limit: 20, ttl: 15 * MINUTE } },
+  refresh: { ip: { limit: 60, ttl: MINUTE } },
   login: {
     ip: { limit: 20, ttl: MINUTE },
     email: { limit: 10, ttl: 15 * MINUTE },

@@ -12,7 +12,7 @@ import {
   type DomainEvent,
 } from '../../src/shared/domain/domain-event.js';
 import { err, ok } from '../../src/shared/domain/result.js';
-import { ConcurrencyConflictError } from '../../src/shared/infrastructure/persistence/concurrency-conflict.error.js';
+import { ConcurrencyConflictError } from '../../src/shared/domain/concurrency-conflict.error.js';
 import { OutboxTopics } from '../../src/shared/infrastructure/persistence/outbox-topics.js';
 import { TransactionContext } from '../../src/shared/infrastructure/persistence/transaction-context.js';
 import { RequestContext } from '../../src/shared/infrastructure/request-context/request-context.js';

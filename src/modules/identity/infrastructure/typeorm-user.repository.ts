@@ -1,6 +1,6 @@
 import { DataSource, type EntityManager } from 'typeorm';
 import { first } from '../../../shared/domain/guard.js';
-import { ConcurrencyConflictError } from '../../../shared/infrastructure/persistence/concurrency-conflict.error.js';
+import { ConcurrencyConflictError } from '../../../shared/domain/concurrency-conflict.error.js';
 import { isUniqueViolation } from '../../../shared/infrastructure/persistence/pg-errors.js';
 import { TransactionContext } from '../../../shared/infrastructure/persistence/transaction-context.js';
 import type { UserRepository } from '../application/ports.js';

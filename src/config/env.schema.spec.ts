@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import { parseConfig } from './env.schema.js';
@@ -178,6 +179,88 @@ describe('parseConfig', () => {
         PASSWORD_BREACH_CHECK: false,
       },
     });
+  });
+
+  it('JWT_SIGNING_KEYS parses a JSON key list', () => {
+    const keys = [
+      {
+        kid: 'k1',
+        pem: '-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----\n',
+      },
+    ];
+
+    expect(
+      parseConfig({ ...minimalEnv, JWT_SIGNING_KEYS: JSON.stringify(keys) }),
+    ).toMatchObject({
+      ok: true,
+      value: { JWT_SIGNING_KEYS: keys },
+    });
+  });
+
+  it('rejects malformed JWT_SIGNING_KEYS', () => {
+    for (const bad of ['not json', '[]', '[{"kid":"k1","pem":"nope"}]']) {
+      expect(
+        parseConfig({ ...minimalEnv, JWT_SIGNING_KEYS: bad }),
+      ).toMatchObject({
+        ok: false,
+        error: expect.stringContaining('JWT_SIGNING_KEYS'),
+      });
+    }
+  });
+
+  it('requires JWT_SIGNING_KEYS in production', () => {
+    expect(
+      parseConfig({
+        ...minimalEnv,
+        NODE_ENV: 'production',
+        EMAIL_TRANSPORT: 'smtp',
+        SMTP_URL: 'smtp://mail.example.com:587',
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('JWT_SIGNING_KEYS'),
+    });
+  });
+
+  it('token TTL defaults', () => {
+    expect(parseConfig(minimalEnv)).toMatchObject({
+      ok: true,
+      value: {
+        JWT_ISSUER: 'http://localhost:3001',
+        JWT_AUDIENCE: 'cornal-platform',
+        ACCESS_TOKEN_TTL_SECONDS: 600,
+        REFRESH_IDLE_TTL_SECONDS: 1_209_600,
+        REFRESH_ABSOLUTE_TTL_SECONDS: 2_592_000,
+      },
+    });
+  });
+
+  it('absolute TTL must not be shorter than idle', () => {
+    expect(
+      parseConfig({
+        ...minimalEnv,
+        REFRESH_IDLE_TTL_SECONDS: '7200',
+        REFRESH_ABSOLUTE_TTL_SECONDS: '3600',
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('REFRESH_ABSOLUTE_TTL_SECONDS'),
+    });
+  });
+
+  it('keys:generate output is a valid JWT_SIGNING_KEYS value', () => {
+    const line = execFileSync(
+      process.execPath,
+      ['scripts/generate-signing-key.mjs'],
+      {
+        encoding: 'utf8',
+      },
+    ).trim();
+    const value = line.replace(/^JWT_SIGNING_KEYS=/, '');
+
+    expect(
+      parseConfig({ ...minimalEnv, JWT_SIGNING_KEYS: value }),
+    ).toMatchObject({ ok: true });
   });
 
   it('.env.example satisfies the schema', () => {

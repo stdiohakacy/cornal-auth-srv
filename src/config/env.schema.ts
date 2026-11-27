@@ -1,6 +1,31 @@
 import { z } from 'zod';
 import { err, ok, type Result } from '../shared/domain/result.js';
 
+/** `[{ "kid": "...", "pem": "-----BEGIN PRIVATE KEY-----..." }]`: index 0 signs, all are published. */
+const SigningKeysSchema = z
+  .string()
+  .transform((raw, ctx): unknown => {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'JWT_SIGNING_KEYS must be JSON',
+      });
+      return z.NEVER;
+    }
+  })
+  .pipe(
+    z
+      .array(
+        z.strictObject({
+          kid: z.string().min(1).max(64),
+          pem: z.string().startsWith('-----BEGIN PRIVATE KEY-----'),
+        }),
+      )
+      .min(1),
+  );
+
 /** Express `trust proxy` syntax: true | false | hop count | comma-separated names/CIDRs. */
 const trustProxy = z
   .string()
@@ -62,8 +87,45 @@ export const EnvSchema = z
       .enum(['true', 'false'])
       .default('true')
       .transform((value) => value === 'true'),
+    /** ES256 (P-256) PKCS#8 keys. Optional outside production: an ephemeral key is generated. */
+    JWT_SIGNING_KEYS: SigningKeysSchema.optional(),
+    JWT_ISSUER: z.url().default('http://localhost:3001'),
+    JWT_AUDIENCE: z.string().min(1).default('cornal-platform'),
+    ACCESS_TOKEN_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(60)
+      .max(900)
+      .default(600),
+    /** Sliding: each refresh extends it, never past the absolute expiry. */
+    REFRESH_IDLE_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(14 * 24 * 3600),
+    REFRESH_ABSOLUTE_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(30 * 24 * 3600),
   })
   .superRefine((env, ctx) => {
+    if (env.NODE_ENV === 'production' && env.JWT_SIGNING_KEYS === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['JWT_SIGNING_KEYS'],
+        message:
+          'JWT_SIGNING_KEYS is required in production (ephemeral keys break every token on restart)',
+      });
+    }
+    if (env.REFRESH_ABSOLUTE_TTL_SECONDS < env.REFRESH_IDLE_TTL_SECONDS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['REFRESH_ABSOLUTE_TTL_SECONDS'],
+        message:
+          'REFRESH_ABSOLUTE_TTL_SECONDS must be at least REFRESH_IDLE_TTL_SECONDS',
+      });
+    }
     if (env.NODE_ENV === 'production' && env.EMAIL_TRANSPORT === 'log') {
       ctx.addIssue({
         code: 'custom',

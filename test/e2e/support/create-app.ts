@@ -4,30 +4,20 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../src/app.module.js';
 import type { AppConfig } from '../../../src/config/env.schema.js';
+import { buildTestConfig } from '../../../src/config/test-config.test-support.js';
 import { testDatabaseUrl } from '../../integration/support/test-db.js';
 import { configureHttp } from '../../../src/shared/infrastructure/http/configure-http.js';
 
-/** Defaults for e2e apps; the database URL is injected per run by global setup. */
+/** Defaults for e2e apps; the database and Redis URLs are injected per run by global setup. */
 export const testConfig = (): AppConfig =>
-  Object.freeze({
-    NODE_ENV: 'test',
+  buildTestConfig({
     APP_ROLE: 'login',
     PORT: 0,
-    LOG_LEVEL: 'silent',
     TRUST_PROXY: 'loopback',
-    // Per-project test database recreated by global setup; PgBouncer is not involved in tests.
     DATABASE_URL: testDatabaseUrl(),
     DATABASE_DIRECT_URL: testDatabaseUrl(),
-    DB_POOL_MAX: 2,
-    OUTBOX_RELAY_ENABLED: false,
     REDIS_URL: testRedisUrl(),
-    NATS_URL: 'nats://localhost:4222',
-    EMAIL_VERIFICATION_URL: 'http://localhost:3000/verify-email',
-    APP_LOGIN_URL: 'http://localhost:3000/login',
-    PASSWORD_RESET_URL: 'http://localhost:3000/reset-password',
-    EMAIL_TRANSPORT: 'log',
-    PASSWORD_BREACH_CHECK: false,
-    EMAIL_FROM: 'Cornal <no-reply@cornal.local>',
+    DB_POOL_MAX: 2,
   });
 
 /** Boots the real HTTP pipeline (configureHttp) so e2e tests exercise production wiring. */

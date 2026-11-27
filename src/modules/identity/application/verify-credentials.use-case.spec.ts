@@ -107,7 +107,7 @@ describe('VerifyCredentialsUseCase', () => {
 
     expect(result).toEqual({
       ok: true,
-      value: { userId: user.id, emailVerified: false },
+      value: { userId: user.id, emailVerified: false, tokenVersion: 0 },
     });
     expect(counter.counts.has(user.id)).toBe(false);
   });
