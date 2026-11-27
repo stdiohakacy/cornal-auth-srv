@@ -11,6 +11,15 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2023",
+    "lib": [
+      "ES2023",
+      "ES2025.Intl",
+      "DOM",
+      "DOM.Iterable",
+      "DOM.AsyncIterable",
+      "ScriptHost",
+      "WebWorker.ImportScripts"
+    ],
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": ".",
@@ -18,10 +27,7 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "types": [
-      "vitest/globals",
-      "node"
-    ],
+    "types": ["vitest/globals", "node"],
     "noUncheckedIndexedAccess": true,
     "verbatimModuleSyntax": true,
     "noImplicitOverride": true,

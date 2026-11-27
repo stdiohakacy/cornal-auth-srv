@@ -41,6 +41,7 @@ describe('renderEmail', () => {
     ['password-reset', 30 * 60 * 1000, 'expires in 30 minutes'],
     ['org-invitation', 7 * 24 * 60 * 60 * 1000, 'expires in 7 days'],
     ['verify-email', 2 * 60 * 60 * 1000, 'expires in 2 hours'],
+    ['password-reset', 60 * 1000, 'expires in 1 minute and'],
   ] as const)(
     '%s states the lifetime it was issued with (%d ms)',
     (template, expiresInMs, phrase) => {
