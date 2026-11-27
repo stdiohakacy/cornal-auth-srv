@@ -1,6 +1,6 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import type { Result } from '../../../shared/domain/result.js';
-import { SYSTEM_ROLES } from '../../../contracts/permissions.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import type { Result } from '#src/shared/domain/result.js';
+import { SYSTEM_ROLES } from '#src/contracts/permissions.js';
 import type { Membership, MembershipId, RoleId } from '../domain/membership.js';
 import type { Invitation } from '../domain/invitation.js';
 import {

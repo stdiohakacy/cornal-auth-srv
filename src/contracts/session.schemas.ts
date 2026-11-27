@@ -1,9 +1,10 @@
 import { z } from 'zod';
+import { EmailInputSchema, PasswordInputSchema } from './common.schemas.js';
 
 /** Contracts for /auth session endpoints. Pure Zod: shareable with the frontend. */
 export const LoginRequestSchema = z.strictObject({
-  email: z.string().max(254),
-  password: z.string().min(1).max(256),
+  email: EmailInputSchema,
+  password: PasswordInputSchema,
 });
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 

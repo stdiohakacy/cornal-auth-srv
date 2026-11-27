@@ -1,11 +1,12 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { ok } from '../../../shared/domain/result.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { ok } from '#src/shared/domain/result.js';
 import type {
   EmailSender,
   OneTimeTokenRepository,
   OrgInvitePayload,
   SecretTokenGenerator,
 } from './ports.js';
+import { linkWithToken } from './issue-token-link.js';
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -38,12 +39,14 @@ export class IssueOrgInvitationUseCase {
         payload,
         expiresAt: new Date(this.clock.now().getTime() + INVITE_TTL_MS),
       });
-      const link = new URL(this.invitationUrl);
-      link.searchParams.set('token', raw);
       await this.emails.send({
         to: payload.email,
         template: 'org-invitation',
-        data: { link: link.toString(), orgName },
+        data: {
+          link: linkWithToken(this.invitationUrl, raw),
+          orgName,
+          expiresInMs: INVITE_TTL_MS,
+        },
       });
       return ok(undefined);
     });

@@ -1,5 +1,5 @@
 import { Reflector } from '@nestjs/core';
-import type { Permission } from '../../../contracts/permissions.js';
+import type { Permission } from '#src/contracts/permissions.js';
 
 /** Metadata key read by PermissionsGuard. */
 export const RequiredPermissions =

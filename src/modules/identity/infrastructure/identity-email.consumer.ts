@@ -4,9 +4,9 @@ import type { EntityManager } from 'typeorm';
 import {
   UNIT_OF_WORK,
   type UnitOfWork,
-} from '../../../shared/application/ports.js';
-import { ok } from '../../../shared/domain/result.js';
-import { TransactionContext } from '../../../shared/infrastructure/persistence/transaction-context.js';
+} from '#src/shared/application/ports.js';
+import { ok } from '#src/shared/domain/result.js';
+import { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
 import { IssueEmailVerificationUseCase } from '../application/issue-email-verification.use-case.js';
 import { IssuePasswordResetUseCase } from '../application/issue-password-reset.use-case.js';
 import { NotifyPasswordChangedUseCase } from '../application/notify-password-changed.use-case.js';

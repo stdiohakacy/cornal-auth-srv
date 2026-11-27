@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
-import { APP_CONFIG, type AppConfig } from '../../../config/env.schema.js';
+import { APP_CONFIG, type AppConfig } from '#src/config/env.schema.js';
 import { RequestContext } from '../request-context/request-context.js';
 import { buildPinoHttpOptions } from './logger.options.js';
 

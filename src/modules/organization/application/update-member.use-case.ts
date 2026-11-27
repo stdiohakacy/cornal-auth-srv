@@ -1,14 +1,19 @@
-import type { UnitOfWork } from '../../../shared/application/ports.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import type { UnitOfWork } from '#src/shared/application/ports.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import { ensureCanTouch } from '../domain/authorization-policy.js';
-import type { MembershipId, RoleId } from '../domain/membership.js';
+import type { Membership, RoleId } from '../domain/membership.js';
 import {
   type InsufficientPrivilegeError,
-  LastOwnerError,
-  MemberNotFoundError,
+  type LastOwnerError,
+  type MemberNotFoundError,
   RoleNotFoundError,
 } from '../domain/organization.errors.js';
 import { actorPermissions } from './actor-permissions.js';
+import {
+  ensureAnotherOwner,
+  findMemberInOrg,
+  isActiveOwner,
+} from './member-guards.js';
 import type {
   MembershipRepository,
   OrganizationReads,
@@ -20,6 +25,22 @@ export type UpdateMemberError =
   | RoleNotFoundError
   | InsufficientPrivilegeError
   | LastOwnerError;
+
+type TargetStatus = 'active' | 'suspended';
+/** What the caller asked for; `roleIds` is de-duplicated. */
+type MemberChange = {
+  readonly roleIds?: readonly string[];
+  readonly status?: TargetStatus;
+};
+
+/** Each transition reports whether it changed anything. */
+const STATUS_TRANSITIONS: Record<
+  TargetStatus,
+  (member: Membership) => boolean
+> = {
+  suspended: (member) => member.suspend(),
+  active: (member) => member.reactivate(),
+};
 
 /**
  * Replaces a member's roles and/or changes their status. No escalation (every role added or
@@ -39,7 +60,7 @@ export class UpdateMemberUseCase {
     orgId: string;
     membershipId: string;
     roleIds?: readonly string[];
-    status?: 'active' | 'suspended';
+    status?: TargetStatus;
   }): Promise<Result<void, UpdateMemberError>> {
     const actor = await actorPermissions(
       this.reads,
@@ -47,59 +68,81 @@ export class UpdateMemberUseCase {
       input.orgId,
     );
     if (!actor.ok) return actor;
+    const change: MemberChange = {
+      ...(input.roleIds ? { roleIds: [...new Set(input.roleIds)] } : {}),
+      ...(input.status ? { status: input.status } : {}),
+    };
 
     return this.uow.run(async (): Promise<Result<void, UpdateMemberError>> => {
-      // ids come from a schema-validated route param; ownership is checked right below
-      const member = await this.memberships.findById(
-        input.membershipId as MembershipId,
-      );
-      if (!member || member.orgId !== input.orgId)
-        return err(new MemberNotFoundError());
-      const current = await this.reads.rolesByIds(
+      const found = await findMemberInOrg(
+        this.memberships,
         input.orgId,
-        member.roles.items,
+        input.membershipId,
       );
+      if (!found.ok) return found;
+      const member = found.value;
 
-      const touched: (readonly string[])[] = [];
-      const wanted =
-        input.roleIds === undefined ? undefined : [...new Set(input.roleIds)];
-      if (wanted) {
-        const next = await this.reads.rolesByIds(input.orgId, wanted);
-        if (next.length !== wanted.length) return err(new RoleNotFoundError());
-        for (const role of next)
-          if (!member.roles.has(role.id as RoleId))
-            touched.push(role.permissions);
-        for (const role of current)
-          if (!wanted.includes(role.id)) touched.push(role.permissions);
-      }
-      const statusChange =
-        input.status !== undefined && input.status !== member.status;
-      if (statusChange)
-        touched.push(...current.map((role) => role.permissions));
-      const allowed = ensureCanTouch(actor.value, ...touched);
+      const touched = await this.permissionsTouched(
+        input.orgId,
+        member,
+        change,
+      );
+      if (!touched.ok) return touched;
+      const allowed = ensureCanTouch(actor.value, ...touched.value);
       if (!allowed.ok) return allowed;
 
-      const ownerId = this.systemRoles.ownerRoleId();
-      const losesOwner =
-        member.isActive &&
-        member.roles.has(ownerId as RoleId) &&
-        ((wanted !== undefined && !wanted.includes(ownerId)) ||
-          input.status === 'suspended');
-      if (losesOwner && (await this.reads.activeOwnerCount(input.orgId)) <= 1)
-        return err(new LastOwnerError());
+      if (this.dropsOwner(member, change)) {
+        const ownersRemain = await ensureAnotherOwner(this.reads, input.orgId);
+        if (!ownersRemain.ok) return ownersRemain;
+      }
 
-      // ids validated against this org's roles above
-      const rolesChanged = wanted
-        ? member.replaceRoles(wanted as RoleId[])
-        : false;
-      const statusChanged =
-        input.status === 'suspended'
-          ? member.suspend()
-          : input.status === 'active'
-            ? member.reactivate()
-            : false;
-      if (rolesChanged || statusChanged) await this.memberships.save(member);
+      if (applyChange(member, change)) await this.memberships.save(member);
       return ok(undefined);
     });
   }
+
+  /**
+   * Permission sets the change grants or takes away: roles added, roles removed, and on a status
+   * change every role the member holds.
+   */
+  private async permissionsTouched(
+    orgId: string,
+    member: Membership,
+    change: MemberChange,
+  ): Promise<Result<(readonly string[])[], RoleNotFoundError>> {
+    const current = await this.reads.rolesByIds(orgId, member.roles.items);
+    const touched: (readonly string[])[] = [];
+
+    const wanted = change.roleIds;
+    if (wanted) {
+      const next = await this.reads.rolesByIds(orgId, wanted);
+      if (next.length !== wanted.length) return err(new RoleNotFoundError());
+      const added = next.filter((role) => !member.roles.has(role.id as RoleId));
+      const removed = current.filter((role) => !wanted.includes(role.id));
+      touched.push(...[...added, ...removed].map((role) => role.permissions));
+    }
+    if (change.status !== undefined && change.status !== member.status)
+      touched.push(...current.map((role) => role.permissions));
+    return ok(touched);
+  }
+
+  private dropsOwner(member: Membership, change: MemberChange): boolean {
+    const ownerId = this.systemRoles.ownerRoleId();
+    if (!isActiveOwner(member, ownerId)) return false;
+    const losesRole =
+      change.roleIds !== undefined && !change.roleIds.includes(ownerId);
+    return losesRole || change.status === 'suspended';
+  }
+}
+
+/** Applies the change to the aggregate; true when anything actually changed. */
+function applyChange(member: Membership, change: MemberChange): boolean {
+  // role ids were validated against this org's roles in permissionsTouched
+  const rolesChanged = change.roleIds
+    ? member.replaceRoles(change.roleIds as RoleId[])
+    : false;
+  const statusChanged = change.status
+    ? STATUS_TRANSITIONS[change.status](member)
+    : false;
+  return rolesChanged || statusChanged;
 }

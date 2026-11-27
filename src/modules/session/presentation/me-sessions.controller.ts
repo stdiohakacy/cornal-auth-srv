@@ -11,10 +11,10 @@ import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import {
   SessionIdParamSchema,
   type SessionListResponse,
-} from '../../../contracts/session.schemas.js';
-import { unwrap } from '../../../shared/infrastructure/http/unwrap.js';
-import { AppThrottlerGuard } from '../../../shared/infrastructure/throttling/app-throttler.guard.js';
-import { RATE_LIMITS } from '../../../shared/infrastructure/throttling/rate-limits.js';
+} from '#src/contracts/session.schemas.js';
+import { unwrap } from '#src/shared/infrastructure/http/unwrap.js';
+import { AppThrottlerGuard } from '#src/shared/infrastructure/throttling/app-throttler.guard.js';
+import { RATE_LIMITS } from '#src/shared/infrastructure/throttling/rate-limits.js';
 import { ListSessionsUseCase } from '../application/list-sessions.use-case.js';
 import type { AccessClaims } from '../application/ports.js';
 import { RevokeAllSessionsUseCase } from '../application/revoke-all-sessions.use-case.js';

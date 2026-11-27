@@ -1,6 +1,6 @@
-import type { UnitOfWork } from '../../../shared/application/ports.js';
-import { ok, type Result } from '../../../shared/domain/result.js';
-import type { ServiceBusyError } from '../../../shared/domain/service-busy.error.js';
+import type { UnitOfWork } from '#src/shared/application/ports.js';
+import { ok, type Result } from '#src/shared/domain/result.js';
+import type { ServiceBusyError } from '#src/shared/domain/service-busy.error.js';
 import type { User } from '../domain/user.js';
 import type { LoginAttemptCounter, UserRepository } from './ports.js';
 

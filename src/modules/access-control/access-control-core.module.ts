@@ -1,6 +1,6 @@
 import { Global, Module, type OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { InvariantViolation } from '../../shared/domain/domain-error.js';
+import { InvariantViolation } from '#src/shared/domain/domain-error.js';
 import {
   type SystemRoleIds,
   syncPermissionCatalog,

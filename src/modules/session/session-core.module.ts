@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { APP_CONFIG, type AppConfig } from '../../config/env.schema.js';
+import { APP_CONFIG, type AppConfig } from '#src/config/env.schema.js';
+import { CLOCK, UNIT_OF_WORK } from '#src/shared/application/ports.js';
+import type { DomainError } from '#src/shared/domain/domain-error.js';
 import {
-  CLOCK,
-  type Clock,
-  UNIT_OF_WORK,
-  type UnitOfWork,
-} from '../../shared/application/ports.js';
-import type { DomainError } from '../../shared/domain/domain-error.js';
-import { TransactionContext } from '../../shared/infrastructure/persistence/transaction-context.js';
+  from,
+  provideClass,
+} from '#src/shared/infrastructure/di/provide-class.js';
+import { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
 import { GetUserAuthStateUseCase } from '../identity/application/get-user-auth-state.use-case.js';
 import { VerifyCredentialsUseCase } from '../identity/application/verify-credentials.use-case.js';
 import { IdentityCoreModule } from '../identity/identity-core.module.js';
@@ -20,15 +19,12 @@ import { ListSessionsUseCase } from './application/list-sessions.use-case.js';
 import { LogoutUseCase } from './application/logout.use-case.js';
 import {
   ACCESS_TOKEN_SERVICE,
-  type AccessTokenService,
   CREDENTIALS_VERIFIER,
   ORG_CONTEXT_READER,
   type OrgContextReader,
   type CredentialsVerifier,
   REFRESH_TOKEN_FACTORY,
-  type RefreshTokenFactory,
   SESSION_REPOSITORY,
-  type SessionRepository,
   USER_AUTH_STATE,
   type UserAuthStateReader,
 } from './application/ports.js';
@@ -41,7 +37,6 @@ import {
   KEY_RING,
   keyRingProvider,
 } from './infrastructure/key-ring.provider.js';
-import type { KeyRing } from './infrastructure/key-ring.js';
 import { NodeRefreshTokenFactory } from './infrastructure/node-refresh-token-factory.js';
 import { TypeOrmSessionRepository } from './infrastructure/typeorm-session.repository.js';
 
@@ -55,24 +50,22 @@ const SESSION_TTL = Symbol('SESSION_TTL');
   imports: [IdentityCoreModule, OrganizationCoreModule],
   providers: [
     keyRingProvider,
-    {
-      provide: ACCESS_TOKEN_SERVICE,
-      inject: [KEY_RING, APP_CONFIG],
-      useFactory: (keys: KeyRing, config: AppConfig) =>
-        new JoseTokenService(
-          keys,
-          config.JWT_ISSUER,
-          config.JWT_AUDIENCE,
-          config.ACCESS_TOKEN_TTL_SECONDS,
-        ),
-    },
+    provideClass(
+      JoseTokenService,
+      [
+        KEY_RING,
+        from<AppConfig>(APP_CONFIG, (c) => c.JWT_ISSUER),
+        from<AppConfig>(APP_CONFIG, (c) => c.JWT_AUDIENCE),
+        from<AppConfig>(APP_CONFIG, (c) => c.ACCESS_TOKEN_TTL_SECONDS),
+      ],
+      ACCESS_TOKEN_SERVICE,
+    ),
     { provide: REFRESH_TOKEN_FACTORY, useValue: new NodeRefreshTokenFactory() },
-    {
-      provide: SESSION_REPOSITORY,
-      inject: [DataSource, TransactionContext],
-      useFactory: (ds: DataSource, tx: TransactionContext) =>
-        new TypeOrmSessionRepository(ds, tx),
-    },
+    provideClass(
+      TypeOrmSessionRepository,
+      [DataSource, TransactionContext],
+      SESSION_REPOSITORY,
+    ),
     {
       provide: SESSION_TTL,
       inject: [APP_CONFIG],
@@ -109,124 +102,50 @@ const SESSION_TTL = Symbol('SESSION_TTL');
           resolve.defaultFor(userId, preferredOrgId),
       }),
     },
-    {
-      provide: SwitchOrganizationUseCase,
-      inject: [
-        SESSION_REPOSITORY,
-        ORG_CONTEXT_READER,
-        ACCESS_TOKEN_SERVICE,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        sessions: SessionRepository,
-        orgs: OrgContextReader,
-        accessTokens: AccessTokenService,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) =>
-        new SwitchOrganizationUseCase(sessions, orgs, accessTokens, uow, clock),
-    },
-    {
-      provide: LoginUseCase,
-      inject: [
-        CREDENTIALS_VERIFIER,
-        SESSION_REPOSITORY,
-        REFRESH_TOKEN_FACTORY,
-        ACCESS_TOKEN_SERVICE,
-        ORG_CONTEXT_READER,
-        UNIT_OF_WORK,
-        CLOCK,
-        SESSION_TTL,
-      ],
-      useFactory: (
-        credentials: CredentialsVerifier<DomainError>,
-        sessions: SessionRepository,
-        refreshTokens: RefreshTokenFactory,
-        accessTokens: AccessTokenService,
-        orgs: OrgContextReader,
-        uow: UnitOfWork,
-        clock: Clock,
-        ttl: SessionTtl,
-      ) =>
-        new LoginUseCase(
-          credentials,
-          sessions,
-          refreshTokens,
-          accessTokens,
-          orgs,
-          uow,
-          clock,
-          ttl,
-        ),
-    },
-    {
-      provide: RefreshSessionUseCase,
-      inject: [
-        USER_AUTH_STATE,
-        SESSION_REPOSITORY,
-        REFRESH_TOKEN_FACTORY,
-        ACCESS_TOKEN_SERVICE,
-        ORG_CONTEXT_READER,
-        UNIT_OF_WORK,
-        CLOCK,
-        SESSION_TTL,
-      ],
-      useFactory: (
-        authState: UserAuthStateReader,
-        sessions: SessionRepository,
-        refreshTokens: RefreshTokenFactory,
-        accessTokens: AccessTokenService,
-        orgs: OrgContextReader,
-        uow: UnitOfWork,
-        clock: Clock,
-        ttl: SessionTtl,
-      ) =>
-        new RefreshSessionUseCase(
-          authState,
-          sessions,
-          refreshTokens,
-          accessTokens,
-          orgs,
-          uow,
-          clock,
-          ttl,
-        ),
-    },
-    {
-      provide: LogoutUseCase,
-      inject: [SESSION_REPOSITORY, REFRESH_TOKEN_FACTORY, UNIT_OF_WORK, CLOCK],
-      useFactory: (
-        sessions: SessionRepository,
-        refreshTokens: RefreshTokenFactory,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) => new LogoutUseCase(sessions, refreshTokens, uow, clock),
-    },
-    {
-      provide: ListSessionsUseCase,
-      inject: [SESSION_REPOSITORY, CLOCK],
-      useFactory: (sessions: SessionRepository, clock: Clock) =>
-        new ListSessionsUseCase(sessions, clock),
-    },
-    {
-      provide: RevokeSessionUseCase,
-      inject: [SESSION_REPOSITORY, UNIT_OF_WORK, CLOCK],
-      useFactory: (
-        sessions: SessionRepository,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) => new RevokeSessionUseCase(sessions, uow, clock),
-    },
-    {
-      provide: RevokeAllSessionsUseCase,
-      inject: [SESSION_REPOSITORY, UNIT_OF_WORK, CLOCK],
-      useFactory: (
-        sessions: SessionRepository,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) => new RevokeAllSessionsUseCase(sessions, uow, clock),
-    },
+    provideClass(SwitchOrganizationUseCase, [
+      SESSION_REPOSITORY,
+      ORG_CONTEXT_READER,
+      ACCESS_TOKEN_SERVICE,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(LoginUseCase, [
+      CREDENTIALS_VERIFIER,
+      SESSION_REPOSITORY,
+      REFRESH_TOKEN_FACTORY,
+      ACCESS_TOKEN_SERVICE,
+      ORG_CONTEXT_READER,
+      UNIT_OF_WORK,
+      CLOCK,
+      SESSION_TTL,
+    ]),
+    provideClass(RefreshSessionUseCase, [
+      USER_AUTH_STATE,
+      SESSION_REPOSITORY,
+      REFRESH_TOKEN_FACTORY,
+      ACCESS_TOKEN_SERVICE,
+      ORG_CONTEXT_READER,
+      UNIT_OF_WORK,
+      CLOCK,
+      SESSION_TTL,
+    ]),
+    provideClass(LogoutUseCase, [
+      SESSION_REPOSITORY,
+      REFRESH_TOKEN_FACTORY,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(ListSessionsUseCase, [SESSION_REPOSITORY, CLOCK]),
+    provideClass(RevokeSessionUseCase, [
+      SESSION_REPOSITORY,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(RevokeAllSessionsUseCase, [
+      SESSION_REPOSITORY,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
   ],
   exports: [
     SwitchOrganizationUseCase,

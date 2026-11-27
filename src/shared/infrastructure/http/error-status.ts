@@ -1,8 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import {
-  CommonErrorCode,
-  type ErrorCode,
-} from '../../../contracts/error-codes.js';
+import { CommonErrorCode, type ErrorCode } from '#src/contracts/error-codes.js';
 
 /** Adding a code to the catalog without a status here is a compile error. */
 export const ERROR_STATUS = {

@@ -1,6 +1,6 @@
 import type { DataSource } from 'typeorm';
-import { first } from '../../../shared/domain/guard.js';
-import { TransactionContext } from '../../../shared/infrastructure/persistence/transaction-context.js';
+import { first } from '#src/shared/domain/guard.js';
+import { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
 import type {
   OneTimeTokenRepository,
   OpenOrgInvite,

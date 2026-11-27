@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { EntityManager } from 'typeorm';
-import type { EventSource } from '../../domain/aggregate-root.js';
-import { InvariantViolation } from '../../domain/domain-error.js';
+import type { EventSource } from '#src/shared/domain/aggregate-root.js';
+import { InvariantViolation } from '#src/shared/domain/domain-error.js';
 
 type TransactionStore = {
   readonly manager: EntityManager;

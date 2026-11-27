@@ -1,8 +1,5 @@
-import {
-  OrgErrorCode,
-  SessionErrorCode,
-} from '../../../contracts/error-codes.js';
-import { DomainError } from '../../../shared/domain/domain-error.js';
+import { OrgErrorCode, SessionErrorCode } from '#src/contracts/error-codes.js';
+import { DomainError } from '#src/shared/domain/domain-error.js';
 
 /** Unknown, expired, revoked or reused credentials. One message for all: reveal nothing. */
 export class SessionInvalidError extends DomainError<

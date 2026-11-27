@@ -1,8 +1,8 @@
-import type { Permission } from '../../../contracts/permissions.js';
-import { AggregateRoot } from '../../../shared/domain/aggregate-root.js';
-import { newId } from '../../../shared/domain/id.js';
-import { WatchedList } from '../../../shared/domain/watched-list.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import type { Permission } from '#src/contracts/permissions.js';
+import { AggregateRoot } from '#src/shared/domain/aggregate-root.js';
+import { newId } from '#src/shared/domain/id.js';
+import { WatchedList } from '#src/shared/domain/watched-list.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import type { RoleId } from './membership.js';
 import { InvalidRoleKeyError } from './organization.errors.js';
 

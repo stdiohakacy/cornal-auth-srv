@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Outbox } from '@nestjs/outbox';
 import { DataSource, type EntityManager } from 'typeorm';
-import type { UnitOfWork } from '../../application/ports.js';
-import type { Err, Result } from '../../domain/result.js';
+import type { UnitOfWork } from '#src/shared/application/ports.js';
+import type { Err, Result } from '#src/shared/domain/result.js';
 import { RequestContext } from '../request-context/request-context.js';
 import { OutboxTopics } from './outbox-topics.js';
 import { TransactionContext } from './transaction-context.js';

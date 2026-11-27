@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ThrottlingModule } from '../../shared/infrastructure/throttling/throttling.module.js';
+import { ThrottlingModule } from '#src/shared/infrastructure/throttling/throttling.module.js';
 import { MeSessionsController } from './presentation/me-sessions.controller.js';
 import { SessionController } from './presentation/session.controller.js';
 import { JwksModule, SessionGuardModule } from './session-guard.module.js';

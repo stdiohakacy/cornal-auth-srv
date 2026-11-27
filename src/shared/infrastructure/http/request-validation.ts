@@ -3,7 +3,7 @@ import {
   StandardSchemaValidationPipe,
   type StandardSchemaValidationPipeOptions,
 } from '@nestjs/common';
-import { InvariantViolation } from '../../domain/domain-error.js';
+import { InvariantViolation } from '#src/shared/domain/domain-error.js';
 
 type SchemaIssue = Parameters<
   NonNullable<StandardSchemaValidationPipeOptions['exceptionFactory']>

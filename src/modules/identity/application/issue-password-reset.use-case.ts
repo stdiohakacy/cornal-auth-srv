@@ -1,5 +1,5 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import { ok, type Result } from '../../../shared/domain/result.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import { ok, type Result } from '#src/shared/domain/result.js';
 import type { UserId } from '../domain/user.js';
 import { issueTokenLink } from './issue-token-link.js';
 import type {
@@ -32,13 +32,15 @@ export class IssuePasswordResetUseCase {
       await issueTokenLink(
         { tokens: this.tokens, generator: this.generator, emails: this.emails },
         {
-          purpose: 'password_reset',
-          ttlMs: TOKEN_TTL_MS,
-          template: 'password-reset',
-          baseUrl: this.resetUrl,
+          spec: {
+            purpose: 'password_reset',
+            ttlMs: TOKEN_TTL_MS,
+            template: 'password-reset',
+            baseUrl: this.resetUrl,
+          },
+          user,
+          now: this.clock.now(),
         },
-        user,
-        this.clock.now(),
       );
       return ok('sent' as const);
     });

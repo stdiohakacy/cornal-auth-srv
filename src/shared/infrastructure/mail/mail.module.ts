@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { LogMailTransport, MailModule, SmtpTransport } from '@nestjs/mail';
-import { APP_CONFIG, type AppConfig } from '../../../config/env.schema.js';
-import { InvariantViolation } from '../../domain/domain-error.js';
+import { APP_CONFIG, type AppConfig } from '#src/config/env.schema.js';
+import { InvariantViolation } from '#src/shared/domain/domain-error.js';
 
 /**
  * Global Mailer. Delivery retries are left to the outbox (`retry: false`): a failed send fails the

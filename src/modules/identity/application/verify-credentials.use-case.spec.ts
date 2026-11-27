@@ -1,5 +1,5 @@
-import { err } from '../../../shared/domain/result.js';
-import { ServiceBusyError } from '../../../shared/domain/service-busy.error.js';
+import { err } from '#src/shared/domain/result.js';
+import { ServiceBusyError } from '#src/shared/domain/service-busy.error.js';
 import {
   fakeHasher,
   fixedClock,

@@ -1,7 +1,7 @@
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
-import type { AppConfig } from '../../../config/env.schema.js';
+import type { AppConfig } from '#src/config/env.schema.js';
 import { RequestContext } from '../request-context/request-context.js';
 import { createRequestContextMiddleware } from '../request-context/request-context.middleware.js';
 import { AppExceptionFilter } from './app-exception.filter.js';

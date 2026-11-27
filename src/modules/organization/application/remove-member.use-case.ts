@@ -1,13 +1,17 @@
-import type { UnitOfWork } from '../../../shared/application/ports.js';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import type { UnitOfWork } from '#src/shared/application/ports.js';
+import { ok, type Result } from '#src/shared/domain/result.js';
 import { ensureCanTouch } from '../domain/authorization-policy.js';
-import type { MembershipId, RoleId } from '../domain/membership.js';
-import {
-  type InsufficientPrivilegeError,
+import type {
+  InsufficientPrivilegeError,
   LastOwnerError,
   MemberNotFoundError,
 } from '../domain/organization.errors.js';
 import { actorPermissions } from './actor-permissions.js';
+import {
+  ensureAnotherOwner,
+  findMemberInOrg,
+  isActiveOwner,
+} from './member-guards.js';
 import type {
   MembershipRepository,
   OrganizationReads,
@@ -39,12 +43,14 @@ export class RemoveMemberUseCase {
     if (!actor.ok) return actor;
 
     return this.uow.run(async (): Promise<Result<void, RemoveMemberError>> => {
-      // ids come from a schema-validated route param; ownership is checked right below
-      const member = await this.memberships.findById(
-        input.membershipId as MembershipId,
+      const found = await findMemberInOrg(
+        this.memberships,
+        input.orgId,
+        input.membershipId,
       );
-      if (!member || member.orgId !== input.orgId)
-        return err(new MemberNotFoundError());
+      if (!found.ok) return found;
+      const member = found.value;
+
       const roles = await this.reads.rolesByIds(
         input.orgId,
         member.roles.items,
@@ -55,14 +61,10 @@ export class RemoveMemberUseCase {
       );
       if (!allowed.ok) return allowed;
 
-      const isActiveOwner =
-        member.isActive &&
-        member.roles.has(this.systemRoles.ownerRoleId() as RoleId);
-      if (
-        isActiveOwner &&
-        (await this.reads.activeOwnerCount(input.orgId)) <= 1
-      )
-        return err(new LastOwnerError());
+      if (isActiveOwner(member, this.systemRoles.ownerRoleId())) {
+        const ownersRemain = await ensureAnotherOwner(this.reads, input.orgId);
+        if (!ownersRemain.ok) return ownersRemain;
+      }
 
       await this.memberships.delete(member);
       return ok(undefined);

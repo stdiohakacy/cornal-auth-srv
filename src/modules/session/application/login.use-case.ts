@@ -1,10 +1,12 @@
-import type { Clock, UnitOfWork } from '../../../shared/application/ports.js';
-import type { DomainError } from '../../../shared/domain/domain-error.js';
-import { ok, type Result } from '../../../shared/domain/result.js';
+import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
+import type { DomainError } from '#src/shared/domain/domain-error.js';
+import { ok, type Result } from '#src/shared/domain/result.js';
 import { Session } from '../domain/session.js';
 import {
+  absoluteTtlMs,
+  idleTtlMs,
   type IssuedTokens,
-  secondsUntil,
+  issueTokenPair,
   type SessionTtl,
 } from './issued-tokens.js';
 import {
@@ -14,7 +16,6 @@ import {
   type OrgContextReader,
   type RefreshTokenFactory,
   type SessionRepository,
-  toOrgClaims,
 } from './ports.js';
 
 const AMR = ['pwd'] as const;
@@ -60,8 +61,8 @@ export class LoginUseCase<E extends DomainError> {
       userId,
       refreshHash: hash,
       now,
-      idleTtlMs: this.ttl.idleSeconds * 1000,
-      absoluteTtlMs: this.ttl.absoluteSeconds * 1000,
+      idleTtlMs: idleTtlMs(this.ttl),
+      absoluteTtlMs: absoluteTtlMs(this.ttl),
       amr: AMR,
       ip: input.ip,
       userAgent: input.userAgent,
@@ -72,19 +73,11 @@ export class LoginUseCase<E extends DomainError> {
       return ok(undefined);
     });
 
-    const access = await this.accessTokens.issue({
-      sub: userId,
-      sid: session.id,
-      uv: tokenVersion,
-      amr: session.snapshot.amr,
-      authTime: now,
-      ...(org ? { org: toOrgClaims(org) } : {}),
-    });
-    return ok({
-      accessToken: access.token,
-      expiresIn: access.expiresIn,
-      refreshToken: this.refreshTokens.format(session.id, secret),
-      refreshMaxAgeSeconds: secondsUntil(now, session.snapshot.idleExpiresAt),
-    });
+    return ok(
+      await issueTokenPair(
+        { access: this.accessTokens, refresh: this.refreshTokens },
+        { session, tokenVersion, org, secret, now },
+      ),
+    );
   }
 }

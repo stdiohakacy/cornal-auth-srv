@@ -1,4 +1,4 @@
-import { CommonErrorCode } from '../../contracts/error-codes.js';
+import { CommonErrorCode } from '#src/contracts/error-codes.js';
 import { DomainError } from './domain-error.js';
 
 /** Capacity shedding (e.g. password-hash admission). Maps to 503 with Retry-After. */

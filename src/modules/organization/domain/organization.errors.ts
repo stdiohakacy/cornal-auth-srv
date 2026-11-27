@@ -1,5 +1,5 @@
-import { OrgErrorCode } from '../../../contracts/error-codes.js';
-import { DomainError } from '../../../shared/domain/domain-error.js';
+import { OrgErrorCode } from '#src/contracts/error-codes.js';
+import { DomainError } from '#src/shared/domain/domain-error.js';
 
 export class InvalidSlugError extends DomainError<
   typeof OrgErrorCode.InvalidSlug

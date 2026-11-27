@@ -1,35 +1,27 @@
 import { availableParallelism } from 'node:os';
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { Mailer } from '@nestjs/mail';
-import type { Redis } from 'ioredis';
 import { DataSource } from 'typeorm';
-import { APP_CONFIG, type AppConfig } from '../../config/env.schema.js';
+import { APP_CONFIG, type AppConfig } from '#src/config/env.schema.js';
+import { CLOCK, UNIT_OF_WORK } from '#src/shared/application/ports.js';
 import {
-  CLOCK,
-  type Clock,
-  UNIT_OF_WORK,
-  type UnitOfWork,
-} from '../../shared/application/ports.js';
-import { HashAdmissionGate } from '../../shared/infrastructure/hash-admission-gate.js';
-import { OutboxTopics } from '../../shared/infrastructure/persistence/outbox-topics.js';
-import { TransactionContext } from '../../shared/infrastructure/persistence/transaction-context.js';
-import { REDIS } from '../../shared/infrastructure/redis/redis.module.js';
+  fixed,
+  from,
+  provideClass,
+} from '#src/shared/infrastructure/di/provide-class.js';
+import { HashAdmissionGate } from '#src/shared/infrastructure/hash-admission-gate.js';
+import { OutboxTopics } from '#src/shared/infrastructure/persistence/outbox-topics.js';
+import { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
+import { REDIS } from '#src/shared/infrastructure/redis/redis.module.js';
 import { IssueEmailVerificationUseCase } from './application/issue-email-verification.use-case.js';
 import {
   BREACHED_PASSWORD_CHECKER,
-  type BreachedPasswordChecker,
   EMAIL_SENDER,
-  type EmailSender,
   LOGIN_ATTEMPT_COUNTER,
-  type LoginAttemptCounter,
   ONE_TIME_TOKEN_REPOSITORY,
-  type OneTimeTokenRepository,
   PASSWORD_HASHER,
-  type PasswordHasher,
   SECRET_TOKEN_GENERATOR,
-  type SecretTokenGenerator,
   USER_REPOSITORY,
-  type UserRepository,
 } from './application/ports.js';
 import { NotifyRegistrationAttemptUseCase } from './application/notify-registration-attempt.use-case.js';
 import { ChangePasswordUseCase } from './application/change-password.use-case.js';
@@ -68,18 +60,16 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
  */
 @Module({
   providers: [
-    {
-      provide: USER_REPOSITORY,
-      inject: [DataSource, TransactionContext],
-      useFactory: (ds: DataSource, tx: TransactionContext) =>
-        new TypeOrmUserRepository(ds, tx),
-    },
-    {
-      provide: ONE_TIME_TOKEN_REPOSITORY,
-      inject: [DataSource, TransactionContext],
-      useFactory: (ds: DataSource, tx: TransactionContext) =>
-        new TypeOrmOneTimeTokenRepository(ds, tx),
-    },
+    provideClass(
+      TypeOrmUserRepository,
+      [DataSource, TransactionContext],
+      USER_REPOSITORY,
+    ),
+    provideClass(
+      TypeOrmOneTimeTokenRepository,
+      [DataSource, TransactionContext],
+      ONE_TIME_TOKEN_REPOSITORY,
+    ),
     {
       provide: PASSWORD_HASHER,
       inject: [APP_CONFIG],
@@ -98,11 +88,7 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
         );
       },
     },
-    {
-      provide: LOGIN_ATTEMPT_COUNTER,
-      inject: [REDIS],
-      useFactory: (redis: Redis) => new RedisLoginAttemptCounter(redis),
-    },
+    provideClass(RedisLoginAttemptCounter, [REDIS], LOGIN_ATTEMPT_COUNTER),
     {
       provide: BREACHED_PASSWORD_CHECKER,
       inject: [APP_CONFIG],
@@ -115,285 +101,101 @@ import { TypeOrmUserRepository } from './infrastructure/typeorm-user.repository.
       provide: SECRET_TOKEN_GENERATOR,
       useValue: new NodeSecretTokenGenerator(),
     },
-    {
-      provide: EMAIL_SENDER,
-      inject: [Mailer],
-      useFactory: (mailer: Mailer) => new MailerEmailSender(mailer),
-    },
-    {
-      provide: RegisterUserUseCase,
-      inject: [
-        USER_REPOSITORY,
-        PASSWORD_HASHER,
-        BREACHED_PASSWORD_CHECKER,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        users: UserRepository,
-        hasher: PasswordHasher,
-        breaches: BreachedPasswordChecker,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) => new RegisterUserUseCase(users, hasher, breaches, uow, clock),
-    },
-    {
-      provide: VerifyEmailUseCase,
-      inject: [
-        USER_REPOSITORY,
-        ONE_TIME_TOKEN_REPOSITORY,
-        SECRET_TOKEN_GENERATOR,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        users: UserRepository,
-        tokens: OneTimeTokenRepository,
-        generator: SecretTokenGenerator,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) => new VerifyEmailUseCase(users, tokens, generator, uow, clock),
-    },
-    {
-      provide: IssueEmailVerificationUseCase,
-      inject: [
-        USER_REPOSITORY,
-        ONE_TIME_TOKEN_REPOSITORY,
-        SECRET_TOKEN_GENERATOR,
-        EMAIL_SENDER,
-        UNIT_OF_WORK,
-        CLOCK,
-        APP_CONFIG,
-      ],
-      useFactory: (
-        users: UserRepository,
-        tokens: OneTimeTokenRepository,
-        generator: SecretTokenGenerator,
-        emails: EmailSender,
-        uow: UnitOfWork,
-        clock: Clock,
-        config: AppConfig,
-      ) =>
-        new IssueEmailVerificationUseCase(
-          users,
-          tokens,
-          generator,
-          emails,
-          uow,
-          clock,
-          config.EMAIL_VERIFICATION_URL,
-        ),
-    },
-    {
-      provide: NotifyRegistrationAttemptUseCase,
-      inject: [USER_REPOSITORY, EMAIL_SENDER, APP_CONFIG],
-      useFactory: (
-        users: UserRepository,
-        emails: EmailSender,
-        config: AppConfig,
-      ) =>
-        new NotifyRegistrationAttemptUseCase(
-          users,
-          emails,
-          config.APP_LOGIN_URL,
-        ),
-    },
-    {
-      provide: VerifyCredentialsUseCase,
-      inject: [
-        USER_REPOSITORY,
-        PASSWORD_HASHER,
-        LOGIN_ATTEMPT_COUNTER,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        users: UserRepository,
-        hasher: PasswordHasher,
-        attempts: LoginAttemptCounter,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) =>
-        new VerifyCredentialsUseCase(
-          users,
-          hasher,
-          attempts,
-          uow,
-          clock,
-          DUMMY_PASSWORD_HASH,
-        ),
-    },
-    {
-      provide: GetUserAuthStateUseCase,
-      inject: [USER_REPOSITORY, CLOCK],
-      useFactory: (users: UserRepository, clock: Clock) =>
-        new GetUserAuthStateUseCase(users, clock),
-    },
-    {
-      provide: GetUserEmailsUseCase,
-      inject: [USER_REPOSITORY],
-      useFactory: (users: UserRepository) => new GetUserEmailsUseCase(users),
-    },
-    {
-      provide: IssueOrgInvitationUseCase,
-      inject: [
-        ONE_TIME_TOKEN_REPOSITORY,
-        SECRET_TOKEN_GENERATOR,
-        EMAIL_SENDER,
-        UNIT_OF_WORK,
-        CLOCK,
-        APP_CONFIG,
-      ],
-      useFactory: (
-        tokens: OneTimeTokenRepository,
-        generator: SecretTokenGenerator,
-        emails: EmailSender,
-        uow: UnitOfWork,
-        clock: Clock,
-        config: AppConfig,
-      ) =>
-        new IssueOrgInvitationUseCase(
-          tokens,
-          generator,
-          emails,
-          uow,
-          clock,
-          config.ORG_INVITATION_URL,
-        ),
-    },
-    {
-      provide: ConsumeOrgInvitationUseCase,
-      inject: [
-        USER_REPOSITORY,
-        ONE_TIME_TOKEN_REPOSITORY,
-        SECRET_TOKEN_GENERATOR,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        users: UserRepository,
-        tokens: OneTimeTokenRepository,
-        generator: SecretTokenGenerator,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) =>
-        new ConsumeOrgInvitationUseCase(users, tokens, generator, uow, clock),
-    },
-    {
-      provide: ListOrgInvitationsUseCase,
-      inject: [ONE_TIME_TOKEN_REPOSITORY, CLOCK],
-      useFactory: (tokens: OneTimeTokenRepository, clock: Clock) =>
-        new ListOrgInvitationsUseCase(tokens, clock),
-    },
-    {
-      provide: RevokeOrgInvitationUseCase,
-      inject: [ONE_TIME_TOKEN_REPOSITORY, UNIT_OF_WORK],
-      useFactory: (tokens: OneTimeTokenRepository, uow: UnitOfWork) =>
-        new RevokeOrgInvitationUseCase(tokens, uow),
-    },
-    {
-      provide: ChangePasswordUseCase,
-      inject: [
-        USER_REPOSITORY,
-        PASSWORD_HASHER,
-        BREACHED_PASSWORD_CHECKER,
-        LOGIN_ATTEMPT_COUNTER,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        users: UserRepository,
-        hasher: PasswordHasher,
-        breaches: BreachedPasswordChecker,
-        attempts: LoginAttemptCounter,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) =>
-        new ChangePasswordUseCase(
-          users,
-          hasher,
-          breaches,
-          attempts,
-          uow,
-          clock,
-        ),
-    },
-    {
-      provide: RequestPasswordResetUseCase,
-      inject: [USER_REPOSITORY, UNIT_OF_WORK, CLOCK],
-      useFactory: (users: UserRepository, uow: UnitOfWork, clock: Clock) =>
-        new RequestPasswordResetUseCase(users, uow, clock),
-    },
-    {
-      provide: IssuePasswordResetUseCase,
-      inject: [
-        USER_REPOSITORY,
-        ONE_TIME_TOKEN_REPOSITORY,
-        SECRET_TOKEN_GENERATOR,
-        EMAIL_SENDER,
-        UNIT_OF_WORK,
-        CLOCK,
-        APP_CONFIG,
-      ],
-      useFactory: (
-        users: UserRepository,
-        tokens: OneTimeTokenRepository,
-        generator: SecretTokenGenerator,
-        emails: EmailSender,
-        uow: UnitOfWork,
-        clock: Clock,
-        config: AppConfig,
-      ) =>
-        new IssuePasswordResetUseCase(
-          users,
-          tokens,
-          generator,
-          emails,
-          uow,
-          clock,
-          config.PASSWORD_RESET_URL,
-        ),
-    },
-    {
-      provide: ResetPasswordUseCase,
-      inject: [
-        USER_REPOSITORY,
-        ONE_TIME_TOKEN_REPOSITORY,
-        SECRET_TOKEN_GENERATOR,
-        PASSWORD_HASHER,
-        BREACHED_PASSWORD_CHECKER,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        users: UserRepository,
-        tokens: OneTimeTokenRepository,
-        generator: SecretTokenGenerator,
-        hasher: PasswordHasher,
-        breaches: BreachedPasswordChecker,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) =>
-        new ResetPasswordUseCase(
-          users,
-          tokens,
-          generator,
-          hasher,
-          breaches,
-          uow,
-          clock,
-        ),
-    },
-    {
-      provide: NotifyPasswordChangedUseCase,
-      inject: [USER_REPOSITORY, EMAIL_SENDER, APP_CONFIG],
-      useFactory: (
-        users: UserRepository,
-        emails: EmailSender,
-        config: AppConfig,
-      ) =>
-        new NotifyPasswordChangedUseCase(users, emails, config.APP_LOGIN_URL),
-    },
+    provideClass(MailerEmailSender, [Mailer], EMAIL_SENDER),
+    provideClass(RegisterUserUseCase, [
+      USER_REPOSITORY,
+      PASSWORD_HASHER,
+      BREACHED_PASSWORD_CHECKER,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(VerifyEmailUseCase, [
+      USER_REPOSITORY,
+      ONE_TIME_TOKEN_REPOSITORY,
+      SECRET_TOKEN_GENERATOR,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(IssueEmailVerificationUseCase, [
+      USER_REPOSITORY,
+      ONE_TIME_TOKEN_REPOSITORY,
+      SECRET_TOKEN_GENERATOR,
+      EMAIL_SENDER,
+      UNIT_OF_WORK,
+      CLOCK,
+      from<AppConfig>(APP_CONFIG, (c) => c.EMAIL_VERIFICATION_URL),
+    ]),
+    provideClass(NotifyRegistrationAttemptUseCase, [
+      USER_REPOSITORY,
+      EMAIL_SENDER,
+      from<AppConfig>(APP_CONFIG, (c) => c.APP_LOGIN_URL),
+    ]),
+    provideClass(VerifyCredentialsUseCase, [
+      USER_REPOSITORY,
+      PASSWORD_HASHER,
+      LOGIN_ATTEMPT_COUNTER,
+      UNIT_OF_WORK,
+      CLOCK,
+      fixed(DUMMY_PASSWORD_HASH),
+    ]),
+    provideClass(GetUserAuthStateUseCase, [USER_REPOSITORY, CLOCK]),
+    provideClass(GetUserEmailsUseCase, [USER_REPOSITORY]),
+    provideClass(IssueOrgInvitationUseCase, [
+      ONE_TIME_TOKEN_REPOSITORY,
+      SECRET_TOKEN_GENERATOR,
+      EMAIL_SENDER,
+      UNIT_OF_WORK,
+      CLOCK,
+      from<AppConfig>(APP_CONFIG, (c) => c.ORG_INVITATION_URL),
+    ]),
+    provideClass(ConsumeOrgInvitationUseCase, [
+      USER_REPOSITORY,
+      ONE_TIME_TOKEN_REPOSITORY,
+      SECRET_TOKEN_GENERATOR,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(ListOrgInvitationsUseCase, [ONE_TIME_TOKEN_REPOSITORY, CLOCK]),
+    provideClass(RevokeOrgInvitationUseCase, [
+      ONE_TIME_TOKEN_REPOSITORY,
+      UNIT_OF_WORK,
+    ]),
+    provideClass(ChangePasswordUseCase, [
+      USER_REPOSITORY,
+      PASSWORD_HASHER,
+      BREACHED_PASSWORD_CHECKER,
+      LOGIN_ATTEMPT_COUNTER,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(RequestPasswordResetUseCase, [
+      USER_REPOSITORY,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(IssuePasswordResetUseCase, [
+      USER_REPOSITORY,
+      ONE_TIME_TOKEN_REPOSITORY,
+      SECRET_TOKEN_GENERATOR,
+      EMAIL_SENDER,
+      UNIT_OF_WORK,
+      CLOCK,
+      from<AppConfig>(APP_CONFIG, (c) => c.PASSWORD_RESET_URL),
+    ]),
+    provideClass(ResetPasswordUseCase, [
+      USER_REPOSITORY,
+      ONE_TIME_TOKEN_REPOSITORY,
+      SECRET_TOKEN_GENERATOR,
+      PASSWORD_HASHER,
+      BREACHED_PASSWORD_CHECKER,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(NotifyPasswordChangedUseCase, [
+      USER_REPOSITORY,
+      EMAIL_SENDER,
+      from<AppConfig>(APP_CONFIG, (c) => c.APP_LOGIN_URL),
+    ]),
   ],
   exports: [
     NotifyRegistrationAttemptUseCase,

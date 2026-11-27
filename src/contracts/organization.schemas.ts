@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { DisplayNameSchema } from './common.schemas.js';
 import { type Permission, PERMISSIONS } from './permissions.js';
 
 /** Contracts for /iam organization endpoints and org switching. Pure Zod. */
 export const OrgIdParamSchema = z.uuid();
 
 export const CreateOrganizationRequestSchema = z.strictObject({
-  name: z.string().trim().min(1).max(100),
+  name: DisplayNameSchema,
   slug: z.string().max(48),
 });
 export type CreateOrganizationRequest = z.infer<
@@ -69,13 +70,18 @@ const PermissionCodeSchema = z.custom<Permission>(
   { message: 'Unknown permission code' },
 );
 
+/** Roles assigned in one request (invite, member update). */
+const RoleIdsSchema = z.array(z.uuid()).min(1).max(10);
+/** A role's permission set. */
+const PermissionCodesSchema = z.array(PermissionCodeSchema).max(64);
+
 export const MembershipIdParamSchema = z.uuid();
 export const RoleIdParamSchema = z.uuid();
 export const InvitationIdParamSchema = z.uuid();
 
 export const InviteMemberRequestSchema = z.strictObject({
   email: z.string().trim().toLowerCase().pipe(z.email()),
-  roleIds: z.array(z.uuid()).min(1).max(10),
+  roleIds: RoleIdsSchema,
 });
 export type InviteMemberRequest = z.infer<typeof InviteMemberRequestSchema>;
 
@@ -104,15 +110,15 @@ export type InvitationListResponse = z.infer<
 
 export const CreateRoleRequestSchema = z.strictObject({
   key: z.string().max(32),
-  name: z.string().trim().min(1).max(100),
-  permissions: z.array(PermissionCodeSchema).max(64),
+  name: DisplayNameSchema,
+  permissions: PermissionCodesSchema,
 });
 export type CreateRoleRequest = z.infer<typeof CreateRoleRequestSchema>;
 
 export const UpdateRoleRequestSchema = z
   .strictObject({
-    name: z.string().trim().min(1).max(100).optional(),
-    permissions: z.array(PermissionCodeSchema).max(64).optional(),
+    name: DisplayNameSchema.optional(),
+    permissions: PermissionCodesSchema.optional(),
   })
   .refine((body) => body.name !== undefined || body.permissions !== undefined, {
     message: 'Provide name and/or permissions',
@@ -135,7 +141,7 @@ export type RoleListResponse = z.infer<typeof RoleListResponseSchema>;
 
 export const UpdateMemberRequestSchema = z
   .strictObject({
-    roleIds: z.array(z.uuid()).min(1).max(10).optional(),
+    roleIds: RoleIdsSchema.optional(),
     status: z.enum(['active', 'suspended']).optional(),
   })
   .refine((body) => body.roleIds !== undefined || body.status !== undefined, {

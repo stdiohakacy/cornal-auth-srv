@@ -1,13 +1,9 @@
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import {
-  CLOCK,
-  type Clock,
-  UNIT_OF_WORK,
-  type UnitOfWork,
-} from '../../shared/application/ports.js';
-import { OutboxTopics } from '../../shared/infrastructure/persistence/outbox-topics.js';
-import { TransactionContext } from '../../shared/infrastructure/persistence/transaction-context.js';
+import { CLOCK, UNIT_OF_WORK } from '#src/shared/application/ports.js';
+import { provideClass } from '#src/shared/infrastructure/di/provide-class.js';
+import { OutboxTopics } from '#src/shared/infrastructure/persistence/outbox-topics.js';
+import { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
 import { SystemRoles } from '../access-control/access-control-core.module.js';
 import { ConsumeOrgInvitationUseCase } from '../identity/application/consume-org-invitation.use-case.js';
 import { GetUserAuthStateUseCase } from '../identity/application/get-user-auth-state.use-case.js';
@@ -29,15 +25,10 @@ import {
   INVITATION_GATEWAY,
   INVITATION_REPOSITORY,
   type InvitationGateway,
-  type InvitationRepository,
   MEMBERSHIP_REPOSITORY,
-  type MembershipRepository,
   ORGANIZATION_READS,
   ORGANIZATION_REPOSITORY,
-  type OrganizationReads,
-  type OrganizationRepository,
   ROLE_REPOSITORY,
-  type RoleRepository,
   SYSTEM_ROLE_LOOKUP,
   type SystemRoleLookup,
   USER_DIRECTORY,
@@ -58,35 +49,27 @@ import { TypeOrmRoleRepository } from './infrastructure/typeorm-role.repository.
 @Module({
   imports: [IdentityCoreModule],
   providers: [
-    {
-      provide: ORGANIZATION_REPOSITORY,
-      inject: [DataSource, TransactionContext],
-      useFactory: (ds: DataSource, tx: TransactionContext) =>
-        new TypeOrmOrganizationRepository(ds, tx),
-    },
-    {
-      provide: MEMBERSHIP_REPOSITORY,
-      inject: [DataSource, TransactionContext],
-      useFactory: (ds: DataSource, tx: TransactionContext) =>
-        new TypeOrmMembershipRepository(ds, tx),
-    },
-    {
-      provide: ROLE_REPOSITORY,
-      inject: [DataSource, TransactionContext],
-      useFactory: (ds: DataSource, tx: TransactionContext) =>
-        new TypeOrmRoleRepository(ds, tx),
-    },
-    {
-      provide: INVITATION_REPOSITORY,
-      inject: [TransactionContext],
-      useFactory: (tx: TransactionContext) => new InvitationEventRepository(tx),
-    },
-    {
-      provide: ORGANIZATION_READS,
-      inject: [DataSource],
-      useFactory: (ds: DataSource): OrganizationReads =>
-        new OrganizationQueries(ds),
-    },
+    provideClass(
+      TypeOrmOrganizationRepository,
+      [DataSource, TransactionContext],
+      ORGANIZATION_REPOSITORY,
+    ),
+    provideClass(
+      TypeOrmMembershipRepository,
+      [DataSource, TransactionContext],
+      MEMBERSHIP_REPOSITORY,
+    ),
+    provideClass(
+      TypeOrmRoleRepository,
+      [DataSource, TransactionContext],
+      ROLE_REPOSITORY,
+    ),
+    provideClass(
+      InvitationEventRepository,
+      [TransactionContext],
+      INVITATION_REPOSITORY,
+    ),
+    provideClass(OrganizationQueries, [DataSource], ORGANIZATION_READS),
     {
       provide: USER_DIRECTORY,
       inject: [GetUserAuthStateUseCase, GetUserEmailsUseCase],
@@ -126,179 +109,65 @@ import { TypeOrmRoleRepository } from './infrastructure/typeorm-role.repository.
         memberRoleId: () => roles.ids.member,
       }),
     },
-    {
-      provide: CreateOrganizationUseCase,
-      inject: [
-        USER_DIRECTORY,
-        ORGANIZATION_REPOSITORY,
-        MEMBERSHIP_REPOSITORY,
-        SYSTEM_ROLE_LOOKUP,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        users: UserDirectory,
-        orgs: OrganizationRepository,
-        memberships: MembershipRepository,
-        roles: SystemRoleLookup,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) =>
-        new CreateOrganizationUseCase(
-          users,
-          orgs,
-          memberships,
-          roles,
-          uow,
-          clock,
-        ),
-    },
-    {
-      provide: ListMyOrganizationsUseCase,
-      inject: [ORGANIZATION_READS],
-      useFactory: (reads: OrganizationReads) =>
-        new ListMyOrganizationsUseCase(reads),
-    },
-    {
-      provide: ListMembersUseCase,
-      inject: [ORGANIZATION_READS, USER_DIRECTORY],
-      useFactory: (reads: OrganizationReads, users: UserDirectory) =>
-        new ListMembersUseCase(reads, users),
-    },
-    {
-      provide: ResolveOrgContextUseCase,
-      inject: [ORGANIZATION_READS],
-      useFactory: (reads: OrganizationReads) =>
-        new ResolveOrgContextUseCase(reads),
-    },
-    {
-      provide: UpdateMemberUseCase,
-      inject: [
-        ORGANIZATION_READS,
-        MEMBERSHIP_REPOSITORY,
-        SYSTEM_ROLE_LOOKUP,
-        UNIT_OF_WORK,
-      ],
-      useFactory: (
-        reads: OrganizationReads,
-        memberships: MembershipRepository,
-        roles: SystemRoleLookup,
-        uow: UnitOfWork,
-      ) => new UpdateMemberUseCase(reads, memberships, roles, uow),
-    },
-    {
-      provide: RemoveMemberUseCase,
-      inject: [
-        ORGANIZATION_READS,
-        MEMBERSHIP_REPOSITORY,
-        SYSTEM_ROLE_LOOKUP,
-        UNIT_OF_WORK,
-      ],
-      useFactory: (
-        reads: OrganizationReads,
-        memberships: MembershipRepository,
-        roles: SystemRoleLookup,
-        uow: UnitOfWork,
-      ) => new RemoveMemberUseCase(reads, memberships, roles, uow),
-    },
-    {
-      provide: ListRolesUseCase,
-      inject: [ORGANIZATION_READS],
-      useFactory: (reads: OrganizationReads) => new ListRolesUseCase(reads),
-    },
-    {
-      provide: CreateRoleUseCase,
-      inject: [ORGANIZATION_READS, ROLE_REPOSITORY, UNIT_OF_WORK, CLOCK],
-      useFactory: (
-        reads: OrganizationReads,
-        roles: RoleRepository,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) => new CreateRoleUseCase(reads, roles, uow, clock),
-    },
-    {
-      provide: UpdateRoleUseCase,
-      inject: [
-        ORGANIZATION_READS,
-        ROLE_REPOSITORY,
-        ORGANIZATION_REPOSITORY,
-        UNIT_OF_WORK,
-      ],
-      useFactory: (
-        reads: OrganizationReads,
-        roles: RoleRepository,
-        orgs: OrganizationRepository,
-        uow: UnitOfWork,
-      ) => new UpdateRoleUseCase(reads, roles, orgs, uow),
-    },
-    {
-      provide: DeleteRoleUseCase,
-      inject: [ORGANIZATION_READS, ROLE_REPOSITORY, UNIT_OF_WORK],
-      useFactory: (
-        reads: OrganizationReads,
-        roles: RoleRepository,
-        uow: UnitOfWork,
-      ) => new DeleteRoleUseCase(reads, roles, uow),
-    },
-    {
-      provide: InviteMemberUseCase,
-      inject: [
-        ORGANIZATION_READS,
-        ORGANIZATION_REPOSITORY,
-        INVITATION_REPOSITORY,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        reads: OrganizationReads,
-        orgs: OrganizationRepository,
-        invitations: InvitationRepository,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) => new InviteMemberUseCase(reads, orgs, invitations, uow, clock),
-    },
-    {
-      provide: AcceptInvitationUseCase,
-      inject: [
-        INVITATION_GATEWAY,
-        ORGANIZATION_REPOSITORY,
-        MEMBERSHIP_REPOSITORY,
-        ORGANIZATION_READS,
-        SYSTEM_ROLE_LOOKUP,
-        UNIT_OF_WORK,
-        CLOCK,
-      ],
-      useFactory: (
-        gateway: InvitationGateway,
-        orgs: OrganizationRepository,
-        memberships: MembershipRepository,
-        reads: OrganizationReads,
-        roles: SystemRoleLookup,
-        uow: UnitOfWork,
-        clock: Clock,
-      ) =>
-        new AcceptInvitationUseCase(
-          gateway,
-          orgs,
-          memberships,
-          reads,
-          roles,
-          uow,
-          clock,
-        ),
-    },
-    {
-      provide: ListInvitationsUseCase,
-      inject: [INVITATION_GATEWAY],
-      useFactory: (gateway: InvitationGateway) =>
-        new ListInvitationsUseCase(gateway),
-    },
-    {
-      provide: RevokeInvitationUseCase,
-      inject: [INVITATION_GATEWAY],
-      useFactory: (gateway: InvitationGateway) =>
-        new RevokeInvitationUseCase(gateway),
-    },
+    provideClass(CreateOrganizationUseCase, [
+      USER_DIRECTORY,
+      ORGANIZATION_REPOSITORY,
+      MEMBERSHIP_REPOSITORY,
+      SYSTEM_ROLE_LOOKUP,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(ListMyOrganizationsUseCase, [ORGANIZATION_READS]),
+    provideClass(ListMembersUseCase, [ORGANIZATION_READS, USER_DIRECTORY]),
+    provideClass(ResolveOrgContextUseCase, [ORGANIZATION_READS]),
+    provideClass(UpdateMemberUseCase, [
+      ORGANIZATION_READS,
+      MEMBERSHIP_REPOSITORY,
+      SYSTEM_ROLE_LOOKUP,
+      UNIT_OF_WORK,
+    ]),
+    provideClass(RemoveMemberUseCase, [
+      ORGANIZATION_READS,
+      MEMBERSHIP_REPOSITORY,
+      SYSTEM_ROLE_LOOKUP,
+      UNIT_OF_WORK,
+    ]),
+    provideClass(ListRolesUseCase, [ORGANIZATION_READS]),
+    provideClass(CreateRoleUseCase, [
+      ORGANIZATION_READS,
+      ROLE_REPOSITORY,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(UpdateRoleUseCase, [
+      ORGANIZATION_READS,
+      ROLE_REPOSITORY,
+      ORGANIZATION_REPOSITORY,
+      UNIT_OF_WORK,
+    ]),
+    provideClass(DeleteRoleUseCase, [
+      ORGANIZATION_READS,
+      ROLE_REPOSITORY,
+      UNIT_OF_WORK,
+    ]),
+    provideClass(InviteMemberUseCase, [
+      ORGANIZATION_READS,
+      ORGANIZATION_REPOSITORY,
+      INVITATION_REPOSITORY,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(AcceptInvitationUseCase, [
+      INVITATION_GATEWAY,
+      ORGANIZATION_REPOSITORY,
+      MEMBERSHIP_REPOSITORY,
+      ORGANIZATION_READS,
+      SYSTEM_ROLE_LOOKUP,
+      UNIT_OF_WORK,
+      CLOCK,
+    ]),
+    provideClass(ListInvitationsUseCase, [INVITATION_GATEWAY]),
+    provideClass(RevokeInvitationUseCase, [INVITATION_GATEWAY]),
   ],
   exports: [
     CreateOrganizationUseCase,

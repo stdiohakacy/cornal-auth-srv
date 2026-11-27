@@ -18,10 +18,10 @@ import {
   ResetPasswordRequestSchema,
   type VerifyEmailRequest,
   VerifyEmailRequestSchema,
-} from '../../../contracts/identity.schemas.js';
-import { unwrap } from '../../../shared/infrastructure/http/unwrap.js';
-import { AppThrottlerGuard } from '../../../shared/infrastructure/throttling/app-throttler.guard.js';
-import { RATE_LIMITS } from '../../../shared/infrastructure/throttling/rate-limits.js';
+} from '#src/contracts/identity.schemas.js';
+import { unwrap } from '#src/shared/infrastructure/http/unwrap.js';
+import { AppThrottlerGuard } from '#src/shared/infrastructure/throttling/app-throttler.guard.js';
+import { RATE_LIMITS } from '#src/shared/infrastructure/throttling/rate-limits.js';
 import { RegisterUserUseCase } from '../application/register-user.use-case.js';
 import { RequestPasswordResetUseCase } from '../application/request-password-reset.use-case.js';
 import { ResetPasswordUseCase } from '../application/reset-password.use-case.js';

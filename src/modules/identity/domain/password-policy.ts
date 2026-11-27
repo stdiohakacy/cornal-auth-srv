@@ -1,4 +1,4 @@
-import { err, ok, type Result } from '../../../shared/domain/result.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
 import { WeakPasswordError } from './identity.errors.js';
 
 const MIN_LENGTH = 12;

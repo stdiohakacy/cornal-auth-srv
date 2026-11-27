@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import type { Redis } from 'ioredis';
-import { err, ok, type Result } from '../../../shared/domain/result.js';
-import { ServiceBusyError } from '../../../shared/domain/service-busy.error.js';
+import { err, ok, type Result } from '#src/shared/domain/result.js';
+import { ServiceBusyError } from '#src/shared/domain/service-busy.error.js';
 import type { LoginAttemptCounter } from '../application/ports.js';
 import type { UserId } from '../domain/user.js';
 

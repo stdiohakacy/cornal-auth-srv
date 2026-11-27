@@ -1,11 +1,11 @@
 import type { DataSource, EntityManager } from 'typeorm';
-import type { Permission } from '../../../contracts/permissions.js';
-import { first } from '../../../shared/domain/guard.js';
+import type { Permission } from '#src/contracts/permissions.js';
+import { first } from '#src/shared/domain/guard.js';
 import {
   isForeignKeyViolation,
   isUniqueViolation,
-} from '../../../shared/infrastructure/persistence/pg-errors.js';
-import type { TransactionContext } from '../../../shared/infrastructure/persistence/transaction-context.js';
+} from '#src/shared/infrastructure/persistence/pg-errors.js';
+import type { TransactionContext } from '#src/shared/infrastructure/persistence/transaction-context.js';
 import type { RoleRepository } from '../application/ports.js';
 import type { RoleId } from '../domain/membership.js';
 import {

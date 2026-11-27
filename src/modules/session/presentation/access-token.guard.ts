@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { RequestContext } from '../../../shared/infrastructure/request-context/request-context.js';
+import { RequestContext } from '#src/shared/infrastructure/request-context/request-context.js';
 import {
   ACCESS_TOKEN_SERVICE,
   type AccessClaims,

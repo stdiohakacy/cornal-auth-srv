@@ -19,13 +19,14 @@ import {
   type RoleResponse,
   type UpdateRoleRequest,
   UpdateRoleRequestSchema,
-} from '../../../contracts/organization.schemas.js';
-import { unwrap } from '../../../shared/infrastructure/http/unwrap.js';
-import { PermissionsGuard } from '../../access-control/presentation/permissions.guard.js';
-import { RequirePermissions } from '../../access-control/presentation/require-permissions.decorator.js';
-import type { AccessClaims } from '../../session/application/ports.js';
-import { AccessTokenGuard } from '../../session/presentation/access-token.guard.js';
-import { CurrentAuth } from '../../session/presentation/current-auth.decorator.js';
+} from '#src/contracts/organization.schemas.js';
+import { definedProps } from '#src/shared/domain/defined-props.js';
+import { unwrap } from '#src/shared/infrastructure/http/unwrap.js';
+import { PermissionsGuard } from '#src/modules/access-control/presentation/permissions.guard.js';
+import { RequirePermissions } from '#src/modules/access-control/presentation/require-permissions.decorator.js';
+import type { AccessClaims } from '#src/modules/session/application/ports.js';
+import { AccessTokenGuard } from '#src/modules/session/presentation/access-token.guard.js';
+import { CurrentAuth } from '#src/modules/session/presentation/current-auth.decorator.js';
 import { CreateRoleUseCase } from '../application/create-role.use-case.js';
 import { DeleteRoleUseCase } from '../application/delete-role.use-case.js';
 import { ListRolesUseCase } from '../application/list-roles.use-case.js';
@@ -87,10 +88,7 @@ export class RolesController {
           actorUserId: auth.sub,
           orgId,
           roleId,
-          ...(body.name !== undefined ? { name: body.name } : {}),
-          ...(body.permissions !== undefined
-            ? { permissions: body.permissions }
-            : {}),
+          ...definedProps(body),
         }),
       ),
     );

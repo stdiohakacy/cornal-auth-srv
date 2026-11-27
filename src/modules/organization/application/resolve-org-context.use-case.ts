@@ -1,8 +1,8 @@
 import {
   PERMISSION_CATALOG_VERSION,
   permissionCatalog,
-} from '../../../contracts/permissions.js';
-import { encodePermissionBits } from '../../../sdk/permission-bits.js';
+} from '#src/contracts/permissions.js';
+import { encodePermissionBits } from '#src/sdk/permission-bits.js';
 import type { OrganizationReads } from './ports.js';
 
 /** What an access token says about the active organization. */

@@ -1,6 +1,6 @@
-import { CommonErrorCode } from '../../../contracts/error-codes.js';
-import { DomainError } from '../../domain/domain-error.js';
-import { err, ok } from '../../domain/result.js';
+import { CommonErrorCode } from '#src/contracts/error-codes.js';
+import { DomainError } from '#src/shared/domain/domain-error.js';
+import { err, ok } from '#src/shared/domain/result.js';
 import { httpStatusToCode } from './error-status.js';
 import { unwrap } from './unwrap.js';
 

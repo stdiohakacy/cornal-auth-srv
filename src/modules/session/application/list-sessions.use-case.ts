@@ -1,4 +1,4 @@
-import type { Clock } from '../../../shared/application/ports.js';
+import type { Clock } from '#src/shared/application/ports.js';
 import type { SessionRepository } from './ports.js';
 
 /** Device list row. The raw User-Agent is returned; the frontend renders it (no AGPL parser here). */

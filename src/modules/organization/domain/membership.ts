@@ -1,10 +1,10 @@
-import { AggregateRoot } from '../../../shared/domain/aggregate-root.js';
+import { AggregateRoot } from '#src/shared/domain/aggregate-root.js';
 import {
   createEvent,
   type DomainEvent,
-} from '../../../shared/domain/domain-event.js';
-import { newId, type Id } from '../../../shared/domain/id.js';
-import { WatchedList } from '../../../shared/domain/watched-list.js';
+} from '#src/shared/domain/domain-event.js';
+import { newId, type Id } from '#src/shared/domain/id.js';
+import { WatchedList } from '#src/shared/domain/watched-list.js';
 
 export type MembershipId = Id<'Membership'>;
 export type RoleId = Id<'Role'>;

@@ -6,8 +6,8 @@ import {
   type OnModuleInit,
 } from '@nestjs/common';
 import { Redis } from 'ioredis';
-import { APP_CONFIG, type AppConfig } from '../../../config/env.schema.js';
-import { ReadinessRegistry } from '../../../health/readiness.registry.js';
+import { APP_CONFIG, type AppConfig } from '#src/config/env.schema.js';
+import { ReadinessRegistry } from '#src/health/readiness.registry.js';
 
 export const REDIS = Symbol('REDIS');
 
