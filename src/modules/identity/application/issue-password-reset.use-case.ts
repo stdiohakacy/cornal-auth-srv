@@ -1,6 +1,6 @@
 import type { Clock, UnitOfWork } from '#src/shared/application/ports.js';
-import { minutes } from '#src/shared/domain/duration.js';
 import { ok, type Result } from '#src/shared/domain/result.js';
+import { IDENTITY_POLICY } from '../domain/identity-policy.js';
 import type { UserId } from '../domain/user.js';
 import { issueTokenLink } from './issue-token-link.js';
 import type {
@@ -9,8 +9,6 @@ import type {
   SecretTokenGenerator,
   UserRepository,
 } from './ports.js';
-
-const TOKEN_TTL_MS = minutes(30);
 
 /** Worker side of "forgot password": a single-use, 30-minute reset link. */
 export class IssuePasswordResetUseCase {
@@ -35,7 +33,7 @@ export class IssuePasswordResetUseCase {
         {
           spec: {
             purpose: 'password_reset',
-            ttlMs: TOKEN_TTL_MS,
+            ttlMs: IDENTITY_POLICY.tokenTtlMs.passwordReset,
             template: 'password-reset',
             baseUrl: this.resetUrl,
           },

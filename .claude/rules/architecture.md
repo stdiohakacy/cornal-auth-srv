@@ -22,6 +22,7 @@ Sources: `../CORNAL_AUTH_ARCHITECTURE_PLAYBOOK.md`, `../CORNAL_AUTH_SYSTEM_DESIG
 - Ports use Symbol tokens whose names differ from the type (USER_REPOSITORY / UserRepository).
 - Unions via `as const` objects or literal unions; no TS enum. Prefer `type` for data, `interface` for ports.
 - Durations are milliseconds built with `shared/domain/duration.ts` (`minutes(15)`, `days(7)`, `toEpochSeconds`, `secondsUntil`); no raw `* 1000` / `60 * 60` math. Seconds only at edges (JWT, cookies, env).
+- Tunable security policy (TTLs, lockout, rotation limits) lives in `<m>/domain/<m>-policy.ts` as an `as const` object (IDENTITY_POLICY, SESSION_POLICY): code, not env, so changes are reviewed. Deployment settings (URLs, lifetimes ops may tune) stay in APP_CONFIG.
 
 ## Domain modelling
 - Aggregates: private ctor + static create/register (raises events) + static reconstitute (no events). State changes only via named methods.

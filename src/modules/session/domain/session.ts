@@ -5,6 +5,7 @@ import {
 } from '#src/shared/domain/domain-event.js';
 import { newId, type Id } from '#src/shared/domain/id.js';
 import { err, ok, type Result } from '#src/shared/domain/result.js';
+import { SESSION_POLICY } from './session-policy.js';
 import { RefreshConflictError, SessionInvalidError } from './session.errors.js';
 
 export type SessionId = Id<'Session'>;
@@ -36,10 +37,6 @@ export type SessionProps = {
   /** Organization the access tokens of this session are scoped to (null = none selected). */
   activeOrgId: string | null;
 };
-
-const MAX_PREVIOUS_HASHES = 5;
-/** Two tabs refreshing at once: the loser presents prev[0] moments later. Not theft. */
-const ROTATION_GRACE_MS = 10_000;
 
 const minDate = (a: Date, b: Date): Date => (a < b ? a : b);
 
@@ -151,7 +148,7 @@ export class Session extends AggregateRoot<
     if (input.presentedHash === p.refreshHash) {
       p.prevRefreshHashes = [p.refreshHash, ...p.prevRefreshHashes].slice(
         0,
-        MAX_PREVIOUS_HASHES,
+        SESSION_POLICY.maxPreviousRefreshHashes,
       );
       p.refreshHash = input.nextHash;
       p.rotatedAt = input.now;
@@ -168,7 +165,8 @@ export class Session extends AggregateRoot<
     const previousIndex = p.prevRefreshHashes.indexOf(input.presentedHash);
     if (
       previousIndex === 0 &&
-      input.now.getTime() - p.rotatedAt.getTime() < ROTATION_GRACE_MS
+      input.now.getTime() - p.rotatedAt.getTime() <
+        SESSION_POLICY.rotationGraceMs
     ) {
       return err(new RefreshConflictError());
     }
