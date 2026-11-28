@@ -13,6 +13,7 @@ Sources: `../CORNAL_AUTH_ARCHITECTURE_PLAYBOOK.md`, `../CORNAL_AUTH_SYSTEM_DESIG
 - application/: use cases + ports. NO @nestjs/*, NO typeorm. Wired in <m>-core.module.ts with `provideClass(Cls, [TOKEN, from(APP_CONFIG, c => c.X), fixed(v)], PORT?)` (shared/infrastructure/di) + Symbol tokens; hand-written useFactory only for adapters built from object literals.
 - infrastructure/: TypeORM records, mappers, repositories, crypto/jose/Redis adapters. Only layer that touches I/O.
 - presentation/: controllers/guards. Call use cases only; never repositories or aggregates.
+- OpenAPI: request bodies/params come from `@Body({ schema })`/`@Param(..., { schema })`; add `@ApiResult(ResponseSchema)` for 2xx bodies and `@ApiErrors(...codes)` for the use case's error union (status from ERROR_STATUS). Security and guard errors are derived from the guard map in `src/openapi/app-openapi.ts`: a new guard gets an entry there. Never `z.custom()` in contracts (cannot become JSON Schema).
 - Cross-module: depend on another module's exported use case (façade) adapted to your own port in <m>-core.module.ts, or consume its outbox topic. Never read another module's tables. NEVER forwardRef.
 
 ## ESM & TypeScript

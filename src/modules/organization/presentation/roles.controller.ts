@@ -16,7 +16,9 @@ import {
   OrgIdParamSchema,
   RoleIdParamSchema,
   type RoleListResponse,
+  RoleListResponseSchema,
   type RoleResponse,
+  RoleSchema,
   type UpdateRoleRequest,
   UpdateRoleRequestSchema,
 } from '#src/contracts/organization.schemas.js';
@@ -27,6 +29,11 @@ import { RequirePermissions } from '#src/modules/access-control/presentation/req
 import type { AccessClaims } from '#src/modules/session/application/ports.js';
 import { AccessTokenGuard } from '#src/modules/session/presentation/access-token.guard.js';
 import { CurrentAuth } from '#src/modules/session/presentation/current-auth.decorator.js';
+import { OrgErrorCode } from '#src/contracts/error-codes.js';
+import {
+  ApiErrors,
+  ApiResult,
+} from '#src/shared/infrastructure/http/openapi/api-docs.js';
 import { CreateRoleUseCase } from '../application/create-role.use-case.js';
 import { DeleteRoleUseCase } from '../application/delete-role.use-case.js';
 import { ListRolesUseCase } from '../application/list-roles.use-case.js';
@@ -50,6 +57,7 @@ export class RolesController {
 
   @Get()
   @RequirePermissions('role:read')
+  @ApiResult(RoleListResponseSchema)
   async list(
     @Param('orgId', { schema: OrgIdParamSchema }) orgId: string,
   ): Promise<RoleListResponse> {
@@ -58,6 +66,12 @@ export class RolesController {
 
   @Post()
   @RequirePermissions('role:manage')
+  @ApiResult(RoleSchema)
+  @ApiErrors(
+    OrgErrorCode.InvalidRoleKey,
+    OrgErrorCode.RoleKeyTaken,
+    OrgErrorCode.InsufficientPrivilege,
+  )
   async create(
     @CurrentAuth() auth: AccessClaims,
     @Param('orgId', { schema: OrgIdParamSchema }) orgId: string,
@@ -76,6 +90,8 @@ export class RolesController {
 
   @Patch(':roleId')
   @RequirePermissions('role:manage')
+  @ApiResult(RoleSchema)
+  @ApiErrors(OrgErrorCode.RoleNotFound, OrgErrorCode.InsufficientPrivilege)
   async update(
     @CurrentAuth() auth: AccessClaims,
     @Param('orgId', { schema: OrgIdParamSchema }) orgId: string,
@@ -97,6 +113,11 @@ export class RolesController {
   @Delete(':roleId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermissions('role:manage')
+  @ApiErrors(
+    OrgErrorCode.RoleNotFound,
+    OrgErrorCode.RoleInUse,
+    OrgErrorCode.InsufficientPrivilege,
+  )
   async remove(
     @CurrentAuth() auth: AccessClaims,
     @Param('orgId', { schema: OrgIdParamSchema }) orgId: string,

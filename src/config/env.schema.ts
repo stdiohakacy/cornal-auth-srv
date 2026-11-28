@@ -62,6 +62,11 @@ export const EnvSchema = z
       .enum(['true', 'false'])
       .default('true')
       .transform((value) => value === 'true'),
+    /** Serves Swagger UI at /docs. Off by default: the auth service should not advertise itself. */
+    OPENAPI_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
     REDIS_URL: z.url(),
     NATS_URL: z.url(),
     /** Base URL of the frontend page that receives `?token=` from the verification email. */

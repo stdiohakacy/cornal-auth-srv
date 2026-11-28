@@ -7,6 +7,7 @@ import type { AppConfig } from '../../../src/config/env.schema.js';
 import { buildTestConfig } from '../../../src/config/test-config.test-support.js';
 import { testDatabaseUrl } from '../../integration/support/test-db.js';
 import { configureHttp } from '../../../src/shared/infrastructure/http/configure-http.js';
+import { setupOpenApi } from '../../../src/openapi/app-openapi.js';
 
 /** Defaults for e2e apps; the database and Redis URLs are injected per run by global setup. */
 export const testConfig = (): AppConfig =>
@@ -40,6 +41,7 @@ export async function createTestApp(
   const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>();
   configureHttp(app, config);
+  setupOpenApi(app, config);
   await app.init();
   return app;
 }

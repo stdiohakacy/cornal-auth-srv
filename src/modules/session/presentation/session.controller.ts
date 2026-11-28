@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
+import { ApiCookieAuth } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import {
   type LoginRequest,
@@ -17,7 +18,9 @@ import {
   type RefreshRequest,
   RefreshRequestSchema,
   type SessionInfoResponse,
+  SessionInfoResponseSchema,
   type TokenResponse,
+  TokenResponseSchema,
 } from '#src/contracts/session.schemas.js';
 import {
   type SwitchOrganizationRequest,
@@ -27,6 +30,17 @@ import type { DomainError } from '#src/shared/domain/domain-error.js';
 import { unwrap } from '#src/shared/infrastructure/http/unwrap.js';
 import { AppThrottlerGuard } from '#src/shared/infrastructure/throttling/app-throttler.guard.js';
 import { RATE_LIMITS } from '#src/shared/infrastructure/throttling/rate-limits.js';
+import {
+  CommonErrorCode,
+  IdentityErrorCode,
+  OrgErrorCode,
+  SessionErrorCode,
+} from '#src/contracts/error-codes.js';
+import {
+  ApiErrors,
+  ApiResult,
+  REFRESH_COOKIE_SCHEME,
+} from '#src/shared/infrastructure/http/openapi/api-docs.js';
 import type { IssuedTokens } from '../application/issued-tokens.js';
 import { LoginUseCase } from '../application/login.use-case.js';
 import { LogoutUseCase } from '../application/logout.use-case.js';
@@ -61,6 +75,12 @@ export class SessionController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle(RATE_LIMITS.login)
+  @ApiResult(TokenResponseSchema)
+  @ApiErrors(
+    IdentityErrorCode.InvalidCredentials,
+    IdentityErrorCode.AccountLocked,
+    CommonErrorCode.ServiceUnavailable,
+  )
   async login(
     @Body({ schema: LoginRequestSchema }) body: LoginRequest,
     @Req() req: Request,
@@ -77,6 +97,9 @@ export class SessionController {
   @HttpCode(HttpStatus.OK)
   @Throttle(RATE_LIMITS.refresh)
   @SkipThrottle({ email: true, ipEmail: true })
+  @ApiCookieAuth(REFRESH_COOKIE_SCHEME)
+  @ApiResult(TokenResponseSchema)
+  @ApiErrors(SessionErrorCode.Invalid, SessionErrorCode.RefreshConflict)
   async refresh(
     @Body({ schema: RefreshRequestSchema }) body: RefreshRequest,
     @Req() req: Request,
@@ -98,6 +121,7 @@ export class SessionController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle(RATE_LIMITS.refresh)
   @SkipThrottle({ email: true, ipEmail: true })
+  @ApiCookieAuth(REFRESH_COOKIE_SCHEME)
   async logout(
     @Body({ schema: RefreshRequestSchema }) body: RefreshRequest,
     @Req() req: Request,
@@ -116,6 +140,8 @@ export class SessionController {
   @UseGuards(AccessTokenGuard)
   @Throttle(RATE_LIMITS.refresh)
   @SkipThrottle({ email: true, ipEmail: true })
+  @ApiResult(TokenResponseSchema)
+  @ApiErrors(OrgErrorCode.NotMember, OrgErrorCode.MfaRequired)
   async switchOrganization(
     @CurrentAuth() auth: AccessClaims,
     @Body({ schema: SwitchOrganizationRequestSchema })
@@ -139,6 +165,7 @@ export class SessionController {
   @Get('session')
   @UseGuards(AccessTokenGuard)
   @SkipThrottle({ email: true, ipEmail: true })
+  @ApiResult(SessionInfoResponseSchema)
   session(@CurrentAuth() auth: AccessClaims): SessionInfoResponse {
     return {
       userId: auth.sub,

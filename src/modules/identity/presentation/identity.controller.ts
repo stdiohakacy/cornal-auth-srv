@@ -9,11 +9,13 @@ import {
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import {
   type AcceptedResponse,
+  AcceptedResponseSchema,
   type ForgotPasswordRequest,
   ForgotPasswordRequestSchema,
   type RegisterRequest,
   RegisterRequestSchema,
   type RegisterResponse,
+  RegisterResponseSchema,
   type ResetPasswordRequest,
   ResetPasswordRequestSchema,
   type VerifyEmailRequest,
@@ -22,6 +24,14 @@ import {
 import { unwrap } from '#src/shared/infrastructure/http/unwrap.js';
 import { AppThrottlerGuard } from '#src/shared/infrastructure/throttling/app-throttler.guard.js';
 import { RATE_LIMITS } from '#src/shared/infrastructure/throttling/rate-limits.js';
+import {
+  CommonErrorCode,
+  IdentityErrorCode,
+} from '#src/contracts/error-codes.js';
+import {
+  ApiErrors,
+  ApiResult,
+} from '#src/shared/infrastructure/http/openapi/api-docs.js';
 import { RegisterUserUseCase } from '../application/register-user.use-case.js';
 import { RequestPasswordResetUseCase } from '../application/request-password-reset.use-case.js';
 import { ResetPasswordUseCase } from '../application/reset-password.use-case.js';
@@ -41,6 +51,13 @@ export class IdentityController {
   @HttpCode(HttpStatus.ACCEPTED)
   @Throttle(RATE_LIMITS.register)
   @SkipThrottle({ ipEmail: true })
+  @ApiResult(RegisterResponseSchema)
+  @ApiErrors(
+    IdentityErrorCode.InvalidEmail,
+    IdentityErrorCode.WeakPassword,
+    IdentityErrorCode.PasswordBreached,
+    CommonErrorCode.ServiceUnavailable,
+  )
   async register(
     @Body({ schema: RegisterRequestSchema }) body: RegisterRequest,
   ): Promise<RegisterResponse> {
@@ -50,6 +67,7 @@ export class IdentityController {
   @Post('verify-email')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle(RATE_LIMITS.verifyEmail)
+  @ApiErrors(IdentityErrorCode.InvalidToken)
   async confirmEmail(
     @Body({ schema: VerifyEmailRequestSchema }) body: VerifyEmailRequest,
   ): Promise<void> {
@@ -61,6 +79,7 @@ export class IdentityController {
   @HttpCode(HttpStatus.ACCEPTED)
   @Throttle(RATE_LIMITS.forgotPassword)
   @SkipThrottle({ ipEmail: true })
+  @ApiResult(AcceptedResponseSchema)
   async forgotPassword(
     @Body({ schema: ForgotPasswordRequestSchema }) body: ForgotPasswordRequest,
   ): Promise<AcceptedResponse> {
@@ -70,6 +89,12 @@ export class IdentityController {
   @Post('password/reset')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle(RATE_LIMITS.resetPassword)
+  @ApiErrors(
+    IdentityErrorCode.InvalidToken,
+    IdentityErrorCode.WeakPassword,
+    IdentityErrorCode.PasswordBreached,
+    CommonErrorCode.ServiceUnavailable,
+  )
   async resetPassword(
     @Body({ schema: ResetPasswordRequestSchema }) body: ResetPasswordRequest,
   ): Promise<void> {

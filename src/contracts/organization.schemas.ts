@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { DisplayNameSchema } from './common.schemas.js';
-import { type Permission, PERMISSIONS } from './permissions.js';
+import { PERMISSIONS } from './permissions.js';
 
 /** Contracts for /iam organization endpoints and org switching. Pure Zod. */
 export const OrgIdParamSchema = z.uuid();
@@ -62,11 +62,8 @@ export type PermissionCatalogResponse = z.infer<
   typeof PermissionCatalogResponseSchema
 >;
 
-const PERMISSION_CODES: ReadonlySet<string> = new Set(
+const PermissionCodeSchema = z.enum(
   PERMISSIONS.map((p) => p.code),
-);
-const PermissionCodeSchema = z.custom<Permission>(
-  (value) => typeof value === 'string' && PERMISSION_CODES.has(value),
   { message: 'Unknown permission code' },
 );
 
@@ -90,6 +87,20 @@ export const AcceptInvitationRequestSchema = z.strictObject({
 });
 export type AcceptInvitationRequest = z.infer<
   typeof AcceptInvitationRequestSchema
+>;
+
+export const InvitationCreatedResponseSchema = z.strictObject({
+  invitationId: z.string(),
+});
+export type InvitationCreatedResponse = z.infer<
+  typeof InvitationCreatedResponseSchema
+>;
+
+export const AcceptInvitationResponseSchema = z.strictObject({
+  orgId: z.string(),
+});
+export type AcceptInvitationResponse = z.infer<
+  typeof AcceptInvitationResponseSchema
 >;
 
 export const InvitationListResponseSchema = z.strictObject({

@@ -11,10 +11,16 @@ import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import {
   SessionIdParamSchema,
   type SessionListResponse,
+  SessionListResponseSchema,
 } from '#src/contracts/session.schemas.js';
 import { unwrap } from '#src/shared/infrastructure/http/unwrap.js';
 import { AppThrottlerGuard } from '#src/shared/infrastructure/throttling/app-throttler.guard.js';
 import { RATE_LIMITS } from '#src/shared/infrastructure/throttling/rate-limits.js';
+import { SessionErrorCode } from '#src/contracts/error-codes.js';
+import {
+  ApiErrors,
+  ApiResult,
+} from '#src/shared/infrastructure/http/openapi/api-docs.js';
 import { ListSessionsUseCase } from '../application/list-sessions.use-case.js';
 import type { AccessClaims } from '../application/ports.js';
 import { RevokeAllSessionsUseCase } from '../application/revoke-all-sessions.use-case.js';
@@ -36,6 +42,7 @@ export class MeSessionsController {
   ) {}
 
   @Get()
+  @ApiResult(SessionListResponseSchema)
   async list(@CurrentAuth() auth: AccessClaims): Promise<SessionListResponse> {
     const sessions = await this.listSessions.execute({
       userId: auth.sub,
@@ -65,6 +72,7 @@ export class MeSessionsController {
 
   @Delete(':sessionId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrors(SessionErrorCode.NotFound)
   async revokeOne(
     @CurrentAuth() auth: AccessClaims,
     @Param('sessionId', { schema: SessionIdParamSchema }) sessionId: string,
