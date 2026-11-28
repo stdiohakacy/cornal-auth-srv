@@ -17,6 +17,11 @@ import { RATE_LIMITS } from '#src/shared/infrastructure/throttling/rate-limits.j
 import type { AccessClaims } from '#src/modules/session/application/ports.js';
 import { AccessTokenGuard } from '#src/modules/session/presentation/access-token.guard.js';
 import { CurrentAuth } from '#src/modules/session/presentation/current-auth.decorator.js';
+import {
+  CommonErrorCode,
+  IdentityErrorCode,
+} from '#src/contracts/error-codes.js';
+import { ApiErrors } from '#src/shared/infrastructure/http/openapi/api-docs.js';
 import { ChangePasswordUseCase } from '../application/change-password.use-case.js';
 import type { UserId } from '../domain/user.js';
 
@@ -30,6 +35,13 @@ export class MePasswordController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle(RATE_LIMITS.changePassword)
   @SkipThrottle({ email: true, ipEmail: true })
+  @ApiErrors(
+    IdentityErrorCode.InvalidCredentials,
+    IdentityErrorCode.AccountLocked,
+    IdentityErrorCode.WeakPassword,
+    IdentityErrorCode.PasswordBreached,
+    CommonErrorCode.ServiceUnavailable,
+  )
   async change(
     @CurrentAuth() auth: AccessClaims,
     @Body({ schema: ChangePasswordRequestSchema }) body: ChangePasswordRequest,

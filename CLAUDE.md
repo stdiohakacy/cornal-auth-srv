@@ -17,6 +17,7 @@ Auth service của hệ thống microservices cornal.
 - Test: `pnpm test` (unit, không cần hạ tầng) · `pnpm test:int` · `pnpm test:e2e` · `pnpm test:all`
 - `test:int` / `test:e2e` cần `docker compose up -d --wait` (Mailpit xem email dev: http://localhost:8025); global setup tự tạo DB `cornal_auth_<project>` và chạy migration
 - Migration: `pnpm build && pnpm db:migrate` (`pnpm db:revert` lùi 1 bước); luôn chạy qua `DATABASE_DIRECT_URL`, không qua PgBouncer
+- OpenAPI: `OPENAPI_ENABLED=true` → Swagger UI `/docs`, JSON `/docs/openapi.json` (tắt mặc định, không bật ở production) · `pnpm build && pnpm openapi:export` ghi `openapi/{login,api}.json` (không cần DB)
 - Node 24 (`.nvmrc`); env mẫu ở `.env.example` (`main.ts` tự nạp `.env` nếu có)
 
 ## Quy ước

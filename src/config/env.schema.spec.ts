@@ -91,6 +91,16 @@ describe('parseConfig', () => {
     ).toMatchObject({ ok: true, value: { OUTBOX_RELAY_ENABLED: false } });
   });
 
+  it('OPENAPI_ENABLED is off unless set to "true"', () => {
+    expect(parseConfig(minimalEnv)).toMatchObject({
+      ok: true,
+      value: { OPENAPI_ENABLED: false },
+    });
+    expect(
+      parseConfig({ ...minimalEnv, OPENAPI_ENABLED: 'true' }),
+    ).toMatchObject({ ok: true, value: { OPENAPI_ENABLED: true } });
+  });
+
   it('DB_POOL_MAX defaults to 5', () => {
     expect(parseConfig(minimalEnv)).toMatchObject({
       ok: true,

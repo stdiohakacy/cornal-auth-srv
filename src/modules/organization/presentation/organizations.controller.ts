@@ -3,9 +3,12 @@ import {
   type CreateOrganizationRequest,
   CreateOrganizationRequestSchema,
   type MemberListResponse,
+  MemberListResponseSchema,
   OrgIdParamSchema,
   type OrganizationListResponse,
+  OrganizationListResponseSchema,
   type OrganizationSummary,
+  OrganizationSummarySchema,
 } from '#src/contracts/organization.schemas.js';
 import { unwrap } from '#src/shared/infrastructure/http/unwrap.js';
 import { PermissionsGuard } from '#src/modules/access-control/presentation/permissions.guard.js';
@@ -13,6 +16,11 @@ import { RequirePermissions } from '#src/modules/access-control/presentation/req
 import type { AccessClaims } from '#src/modules/session/application/ports.js';
 import { AccessTokenGuard } from '#src/modules/session/presentation/access-token.guard.js';
 import { CurrentAuth } from '#src/modules/session/presentation/current-auth.decorator.js';
+import { OrgErrorCode } from '#src/contracts/error-codes.js';
+import {
+  ApiErrors,
+  ApiResult,
+} from '#src/shared/infrastructure/http/openapi/api-docs.js';
 import { CreateOrganizationUseCase } from '../application/create-organization.use-case.js';
 import { ListMembersUseCase } from '../application/list-members.use-case.js';
 import { ListMyOrganizationsUseCase } from '../application/list-my-organizations.use-case.js';
@@ -27,6 +35,12 @@ export class OrganizationsController {
   ) {}
 
   @Post('orgs')
+  @ApiResult(OrganizationSummarySchema)
+  @ApiErrors(
+    OrgErrorCode.EmailNotVerified,
+    OrgErrorCode.InvalidSlug,
+    OrgErrorCode.SlugTaken,
+  )
   async create(
     @CurrentAuth() auth: AccessClaims,
     @Body({ schema: CreateOrganizationRequestSchema })
@@ -44,6 +58,7 @@ export class OrganizationsController {
   }
 
   @Get('me/organizations')
+  @ApiResult(OrganizationListResponseSchema)
   async mine(
     @CurrentAuth() auth: AccessClaims,
   ): Promise<OrganizationListResponse> {
@@ -61,6 +76,7 @@ export class OrganizationsController {
   @Get('orgs/:orgId/members')
   @UseGuards(PermissionsGuard)
   @RequirePermissions('member:read')
+  @ApiResult(MemberListResponseSchema)
   async members(
     @Param('orgId', { schema: OrgIdParamSchema }) orgId: string,
   ): Promise<MemberListResponse> {

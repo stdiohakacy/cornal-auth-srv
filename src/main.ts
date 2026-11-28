@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
 import { parseConfig } from './config/env.schema.js';
+import { setupOpenApi } from './openapi/app-openapi.js';
 import { configureHttp } from './shared/infrastructure/http/configure-http.js';
 
 async function bootstrap(): Promise<void> {
@@ -23,6 +24,7 @@ async function bootstrap(): Promise<void> {
     { bufferLogs: true },
   );
   configureHttp(app, config.value);
+  setupOpenApi(app, config.value);
   app.enableShutdownHooks();
   await app.listen(config.value.PORT);
 }
